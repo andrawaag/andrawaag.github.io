@@ -1,0 +1,91 @@
+
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<div class="mypanel"></div>
+<script>
+	$.ajaxSetup({
+            async: false
+        });
+	text = "<table>";
+    const urlSearchParams = new URLSearchParams(window.location.search);
+	const params = Object.fromEntries(urlSearchParams.entries());
+	var retrievedObject = JSON.parse(localStorage.getItem('occuranceData_'+params.occurenceId));
+
+	text += params.occurenceId+","+params.mediaId+"<BR>"
+	text += retrievedObject.key
+	text += "<table><tr><td><img src = '"+params.mediaId+"' width=500/></td><td><table>"
+	text += "<tr><td><h3>"+retrievedObject.acceptedScientificName+"</h3></td></tr>"
+	text += "<tr><td>GBIF ID "+retrievedObject.gbifID+"</td></tr>"
+	var gbifID = retrievedObject.gbifID
+	text += "<tr><td>license "+retrievedObject.license+"</td></tr>"
+	text += "<tr><td>eventData "+retrievedObject.eventDate+"</td></tr>"
+	text += "<tr><td>acceptedScientificName "+retrievedObject.acceptedScientificName+"</td></tr>"
+	text += "<tr><td>publisherOrg	 "+retrievedObject.publishingOrgKey+"</td></tr>"
+	var usageRights = "" 
+	source = "" 
+	owner = ""
+	title = ""
+	$.each(retrievedObject.extensions["http://rs.tdwg.org/ac/terms/Multimedia"], function() {
+		$.ajaxSetup({
+            async: false
+        });
+		    	if (this.identifier == params["mediaId"])
+					text += "<tr><td>Creator:</td><td>"+this.identifier+"</td></tr>"
+				    sourceUrl = this.identifier
+				    text += "<tr><td>Rights:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]+"</td></tr>"
+				    usageRights = this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]
+				    text += "<tr><td>Owner:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/Owner"]+"</td></tr>"
+				    owner = this["http://ns.adobe.com/xap/1.0/rights/Owner"]
+				    text += "<tr><td>Reference:</td><td>"+this["http://rs.tdwg.org/ac/terms/associatedObservationReference"]+"</td></tr>"
+				    source += this["http://rs.tdwg.org/ac/terms/associatedObservationReference"]
+				    title = this["http://purl.org/dc/terms/title"]
+				    
+			});
+	text += "<tr><td>occurrenceID: "+retrievedObject.occurrenceID+"</td></tr></table></td></tr></table>"
+	
+	
+	text += "</table>"
+
+	url = "<br><br>https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3D"+source+"%0A%7Cauthor%3D"+owner+"%0A%7Cpermission%3D%0A%7Cother%20versions%3D%0A%7D%7D%0A%0A%5B%5BCategory%3A"+encodeURIComponent(retrievedObject[retrievedObject["taxonRank"].toLowerCase()])+"%5D%5D%0A&wpLicense="+usageRights+"-4.0&wpDestFile="+retrievedObject.acceptedScientificName+" "+retrievedObject.gbifID+"&wpSourceType=url&wpUploadFileURL="+params.mediaId
+
+	text += url+"<br><br>"
+	console.log(params)
+	console.log(retrievedObject)
+	 $(".mypanel").html(text);
+</script>
+    url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription={{Information |description={{"
+    url += "en|"+title+"}}"
+|date=2013-02-16
+|source=https://www.inaturalist.org/photos/124435153
+|author=[https://www.inaturalist.org/users/24158 Dinesh Valke]
+|permission=
+|other versions=
+}}
+{{Location|19.409036|72.897491}}
+{{iNaturalist|76051276}}
+{{iNaturalistreview}}
+
+[[Category:Euphorbia neriifolia]]
+&wpLicense=cc-by-sa-4.0&wpDestFile=Euphorbia neriifolia 12443515jpg&wpSourceType=url&wpUploadFileURL=
+
+
+
+
+<hr>
+
+
+
+url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription={{Information
+|description={{en|Indian spurgetree (''Euphorbia neriifolia'')}}
+|date=2013-02-16
+|source=https://www.inaturalist.org/photos/124435153
+|author=[https://www.inaturalist.org/users/24158 Dinesh Valke]
+|permission=
+|other versions=
+}}
+{{Location|19.409036|72.897491}}
+{{iNaturalist|76051276}}
+{{iNaturalistreview}}
+
+[[Category:Euphorbia neriifolia]]
+&wpLicense=cc-by-sa-4.0&wpDestFile=Euphorbia neriifolia 12443515jpg&wpSourceType=url&wpUploadFileURL=
+

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CC images from GBIF</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+    <div class="mypanel"></div>
+
+    <script>
+    const urlSearchParams = new URLSearchParams(window.location.search);
+	const params = Object.fromEntries(urlSearchParams.entries());
+    $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage', function(data) {
+    	var text = 'results for '+params["gbifSpecies"]+"images: "+data.count+"<br>";
+        $.each(data.results, function() {
+
+            $.ajaxSetup({
+            async: false
+        }); 
+            console.log(this)
+            image = this
+        	$.getJSON('https://api.gbif.org/v1/organization/'+this.hostingOrganizationKey, function(orgdata){
+        		image.hostingOrganization = orgdata
+        	})
+            occuranceId = this.key  
+            localStorage.setItem('occuranceData_'+occuranceId, JSON.stringify(this));
+
+		    $.each(this.media, function() {	
+    		    if (this.identifier !== undefined)
+			    	text = text + `
+			                <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'><img src = '${this.identifier}' height=200 width=200/></a>`
+		    });
+		 });
+
+		    $(".mypanel").html(text);
+	});
+    </script>
+
+</body>
+</html>

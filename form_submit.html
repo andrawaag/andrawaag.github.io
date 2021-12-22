@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Stubbuilder</title>
+  <style>
+  p {
+    margin: 0;
+    color: blue;
+  }
+  div,p {
+    margin-left: 10px;
+  }
+  span {
+    color: red;
+  }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+<form action="">
+  taxon name: <input type="text" name="name" value="Euphorbia neriifolia"><br>
+  <input type="submit" value="Submit">
+</form><hr>
+<span></span>
+ 
+<script>
+$( "form" ).submit(function(event) {
+  event.preventDefault();
+
+   $.getJSON('https://api.gbif.org/v1/species/match?verbose=true&'+$(this).serialize(), function(namedata) {
+
+      var text = "<H2>results</h2><table><tr><th>Taxon name</th><th>rank</th><th>GBIF taxon id</th><th>image counts</th></tr><tr><td>";
+       text = text+namedata.scientificName+"</td><td>"+namedata.rank+"</td><td><center>"+namedata.usageKey+"</center></td>"
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+            async: false
+        });
+        var gbifId = namedata.usageKey
+      $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+namedata.usageKey+'&license=CC0_1_0&mediaType=StillImage', function(data) {
+           text = text+"<td>CC0 images: <a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license=CC0_1_0'>"+data.count+"</a></td>";
+               if(typeof callback === 'function'){
+                    callback(text); // call your callback with data
+        }});
+        $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+namedata.usageKey+'&license=CC_BY_4.0&mediaType=StillImage', function(data) {
+           text = text+"<td>CC-BY images: <a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license=CC_BY_4.0'>"+data.count+"</a></td>";
+               if(typeof callback === 'function'){
+                    callback(text); // call your callback with data
+        }
+
+      });
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+            async: true
+        });
+
+
+      text = text + "</tr></table><HR><h3>Alternatives</h3><table><tr><th>Taxon name</th><th>rank</th><th>GBIF taxon id</th><th>image counts</th></tr>"
+        $.each(namedata.alternatives, function() {   
+            var gbifId = this.usageKey
+            text = text+"<tr><td>"+this.scientificName+"</td><td>"+this.rank+"</td><td><center>"+this.usageKey+"</center></td>"
+            // Set the global configs to synchronous 
+            $.ajaxSetup({
+                async: false
+            });
+            $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+this.usageKey+'&license=CC0_1_0&mediaType=StillImage', function(data) {
+                   if (data.count > 0) {
+                      text = text+"<td>CC0: <a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license=CC0_1_0'>"+data.count+"</a></td>"; }
+                   else {
+                      text = text+"<td>CC0: "+data.count+"</td>"; 
+                   }
+                   if(typeof callback === 'function'){
+                        callback(text); // call your callback with data
+            }
+
+            });
+            $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+this.usageKey+'&license=CC_BY_4.0&mediaType=StillImage', function(data) {
+              console.log(data)
+              if (data.count > 0) {
+                      text = text+"<td>CC-BY: <a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license=CC_BY_4.0'>"+data.count+"</a></td>"; }
+                   else {
+                      text = text+"<td>CC_BY: "+data.count+"</td>"; 
+                   }
+                   if(typeof callback === 'function'){
+                        callback(text); // call your callback with data
+            }
+
+            });
+            // Set the global configs to synchronous 
+            
+});
+
+            text = text + "</tr></table>";
+
+        $("#results").html(text);
+  });
+});
+
+</script>
+ 
+<p><tt id="results"></tt></p>
+
+</body>
+</html>
+
+
