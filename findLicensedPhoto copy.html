@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CC0 and CC-BY licensed photo's from GBIF</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+    <div class="mypanel"></div>
+
+    <script>
+    const urlSearchParams = new URLSearchParams(window.location.search);
+	const params = Object.fromEntries(urlSearchParams.entries());
+	
+    $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage', function(data) {
+    	var text = 'results for '+params["gbifSpecies"]+"<br>";
+        $.each(data.results, function() {   
+		    if ("http://rs.tdwg.org/ac/terms/Multimedia" in this.extensions) 
+		    	$.each(this.extensions["http://rs.tdwg.org/ac/terms/Multimedia"], function() {
+		    		if ("http://rs.tdwg.org/ac/terms/thumbnailAccessURI" in this)
+					    text = text + `
+					                <a href='imagedetails.html?${new URLSearchParams(this)}'><img src = '${this["http://rs.tdwg.org/ac/terms/thumbnailAccessURI"]}' height=100 width=100/></a>
+					                `
+		    		else 
+		    			text = text + `
+					                <a href='${this["http://rs.tdwg.org/ac/terms/accessURI"]}'><img src = '${this["http://rs.tdwg.org/ac/terms/accessURI"]}' height=100 width=100/></a>
+					                `});
+		    if ("http://rs.gbif.org/terms/1.0/Multimedia" in this.extensions) 
+		    	$.each(this.extensions["http://rs.gbif.org/terms/1.0/Multimedia"], function() {
+		    		if ("http://purl.org/dc/terms/identifier" in this)
+					    text = text + `
+					                <a href='${this["http://purl.org/dc/terms/identifier"]}'><img src = '${this["http://purl.org/dc/terms/identifier"]}' height=100 width=100/></a>
+					                `
+                });
+		    });
+
+		    $(".mypanel").html(text);
+	});
+    </script>
+
+</body>
+</html>

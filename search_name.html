@@ -1,0 +1,63 @@
+<head>
+<title>Taxon names from GBIF</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+<body>
+    <div class="mypanel"></div>
+
+    <script>
+    const urlSearchParams = new URLSearchParams(window.location.search);
+	const params = Object.fromEntries(urlSearchParams.entries());
+    $.getJSON('https://api.gbif.org/v1/species/match?verbose=true&name='+params["searchTerm"], function(namedata) {
+    	var text = 'results for '+params["searchTerm"]+"<br><table><tr><td>";
+    	text = text+namedata.scientificName+"</td><td>"+namedata.rank+",<a href='hello.html?gbifSpecies="+namedata.usageKey+"'>"+namedata.usageKey+"</a></td>"
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+            async: false
+        });
+    	$.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+namedata.usageKey+'&license=CC0_1_0&mediaType=StillImage', function(data) {
+    		   text = text+"<td>CC0 images: "+data.count+"</td>";
+               if(typeof callback === 'function'){
+                    callback(text); // call your callback with data
+        }
+
+    	});
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+            async: true
+        });
+
+
+    	text = text + "</tr></table><HR><h3>Alternatives</h3><table>"
+        $.each(namedata.alternatives, function() {   
+	
+            text = text+"<tr><td>"+this.scientificName+"</td><td>"+this.rank+",<a href='hello.html?gbifSpecies="+this.usageKey+"'>"+this.usageKey+"</a></td>"
+            // Set the global configs to synchronous 
+            $.ajaxSetup({
+                async: false
+            });
+            $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+this.usageKey+'&license=CC0_1_0&mediaType=StillImage', function(data) {
+                   text = text+"<td>GBIF: CC0 images: "+data.count+"</td>";
+                   if(typeof callback === 'function'){
+                        callback(text); // call your callback with data
+            }
+
+            });
+            $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+this.usageKey+'&license=CC_BY_4.0&mediaType=StillImage', function(data) {
+                   text = text+"<td>GBIF: CC-BY images: "+data.count+"</td>";
+                   if(typeof callback === 'function'){
+                        callback(text); // call your callback with data
+            }
+
+            });
+            // Set the global configs to synchronous 
+            $.ajaxSetup({
+                async: true
+            });
+});
+
+            text = text + "</tr></table>";
+
+		    $(".mypanel").html(text);
+	});
+    </script>
