@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CC images from GBIF</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+ <style>
+ /* Container holding the image and the text */
+.container {
+  position: relative;
+}
+
+/* Bottom right text */
+.text-block {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background-color: green;
+  color: white;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-size: 20%;
+} 
+
+div.gallery {
+  margin: 5px;
+  border: 1px solid #ccc;
+  float: left;
+  width: 400px;
+}
+
+div.gallery:hover {
+  border: 1px solid #777;
+}
+
+div.gallery img {
+  width: 400px;
+  height: 400px;
+}
+
+div.desc {
+  padding: 15px;
+  text-align: center;
+}
+</style>
+
+</head>
+
+<body>
+    <form action="">
+  taxon name: <input type="text" name="name" value="Euphorbia neriifolia"><br>
+  <input type="submit" value="Submit">
+</form><hr>
+    <div class="mypanel"></div>
+
+    <script>
+    const urlSearchParams = new URLSearchParams(window.location.search);
+	  const params = Object.fromEntries(urlSearchParams.entries());
+    console.log(params)
+    $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+params["gbifSpecies"], function(data) {
+        $.each(data, function(k,v) {
+          $.ajaxSetup({
+            async: false
+           }); 
+            $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage&datasetKey='+k, function(data) {
+              $.ajaxSetup({
+                async: false
+              }); 
+                if (data.count >=1)  {
+                  licenseCount = data.count
+                  $.getJSON('https://api.gbif.org/v1/dataset/'+k, function(data) {
+                      $.ajaxSetup({
+                              async: false
+                      });
+                      console.log(data.title, licenseCount)
+                  });
+                }
+          });
+		 });
+	});
+    </script>
+
+</body>
+</html>
