@@ -1,14 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+</head>
 
-<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+
 <div class="mypanel"></div>
 <script>
 	$.ajaxSetup({
-            async: false
-        });
-	
-    const urlSearchParams = new URLSearchParams(window.location.search);
+		async: false
+	});
+
+	const urlSearchParams = new URLSearchParams(window.location.search);
 	const params = Object.fromEntries(urlSearchParams.entries());
 	var retrievedObject = JSON.parse(localStorage.getItem('occuranceData_'+params.occurenceId));
+	console.log(localStorage)
 	text = "<center><h3>"+retrievedObject.acceptedScientificName+"</h3></center><table>";
 
 	text += "<table><tr><td><img src = '"+params.mediaId+"' width=500/></td><td><table>"
@@ -23,43 +32,43 @@
 	switch (retrievedObject.license) {
 		//CC-BY
 		case "http://creativecommons.org/licenses/by/4.0/legalcode":
-		    retrievedObject.wmclicense = "cc-by-4.0"
-		    break ;
+		retrievedObject.wmclicense = "cc-by-4.0"
+		break ;
 		case "http://creativecommons.org/licenses/by/4.0/":
-		    retrievedObject.wmclicense = "cc-by-4.0"
-		    break ;
+		retrievedObject.wmclicense = "cc-by-4.0"
+		break ;
 		//CC0
 		case "http://creativecommons.org/publicdomain/zero/1.0/legalcode":
-		    retrievedObject.wmclicense = "Cc-zero"
-		    break ;
+		retrievedObject.wmclicense = "Cc-zero"
+		break ;
 		case "http://creativecommons.org/publicdomain/zero/1.0/":
-		    retrievedObject.wmclicense = "Cc-zero"
-		    break ;
+		retrievedObject.wmclicense = "Cc-zero"
+		break ;
 	} 
 	source = "" 
 	owner = ""
 	title =encodeURIComponent(retrievedObject.acceptedScientificName+gbifID)
 	$.each(retrievedObject.media, function() {
 		$.ajaxSetup({
-            async: false
-        });
-		    	if (this.identifier == params["mediaId"])
-					text += "<tr><td>Creator:</td><td>"+this.identifier+"</td></tr>"
-				    text += "<tr><td>Rights:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]+"</td></tr>"
-				    license = this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]
-				    text += "<tr><td>Owner:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/Owner"]+"</td></tr>"
-				    owner = this["http://ns.adobe.com/xap/1.0/rights/Owner"]
-				    text += "<tr><td>Reference:</td><td>"+this["http://rs.tdwg.org/ac/terms/associatedObservationReference"]+"</td></tr>"
-				    source = this.references
+			async: false
+		});
+		if (this.identifier == params["mediaId"])
+			text += "<tr><td>Creator:</td><td>"+this.identifier+"</td></tr>"
+		text += "<tr><td>Rights:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]+"</td></tr>"
+		license = this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]
+		text += "<tr><td>Owner:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/Owner"]+"</td></tr>"
+		owner = this["http://ns.adobe.com/xap/1.0/rights/Owner"]
+		text += "<tr><td>Reference:</td><td>"+this["http://rs.tdwg.org/ac/terms/associatedObservationReference"]+"</td></tr>"
+		source = this.references
 				    //formats
 				    switch (this.format) {
 				    	case 'image/jpeg':
-				    	   extension = ".jpg"
+				    	extension = ".jpg"
 				    	break;
 
 				    }
 				    //title = this.
-			});
+				});
 	text += "<tr><td>occurrenceID: "+retrievedObject.occurrenceID+"</td></tr></table></td></tr></table>"
 	
 	
@@ -68,7 +77,7 @@
 	url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3D"+retrievedObject.occurrenceID+"%0A"
 	//author
 	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title 
-    if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
+	if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
 
 		url += encodeURIComponent(" ("+retrievedObject.rightsHolder+")")
 	if (retrievedObject.recordedBy !== undefined)
@@ -84,7 +93,7 @@
 	text += "<a href = '"+url+"' target='_new'>upload2commons</a><br><br>"
 	console.log(params)
 	console.log(retrievedObject)
-	 $(".mypanel").html(text);
+	$(".mypanel").html(text);
 </script>
-    
+
 <hr>

@@ -1,84 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>CC images from GBIF</title>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
- <style>
- /* Container holding the image and the text */
-.container {
-  position: relative;
-}
+	<title>CC images from GBIF</title>
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<style>
+		/* Container holding the image and the text */
+		.container {
+			position: relative;
+		}
 
-/* Bottom right text */
-.text-block {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background-color: green;
-  color: white;
-  padding-left: 20px;
-  padding-right: 20px;
-  font-size: 20%;
-} 
+		/* Bottom right text */
+		.text-block {
+			position: absolute;
+			bottom: 20px;
+			left: 20px;
+			background-color: green;
+			color: white;
+			padding-left: 20px;
+			padding-right: 20px;
+			font-size: 20%;
+		} 
 
-div.gallery {
-  margin: 5px;
-  border: 1px solid #ccc;
-  float: left;
-  width: 400px;
-}
+		div.gallery {
+			margin: 5px;
+			border: 1px solid #ccc;
+			float: left;
+			width: 400px;
+		}
 
-div.gallery:hover {
-  border: 1px solid #777;
-}
+		div.gallery:hover {
+			border: 1px solid #777;
+		}
 
-div.gallery img {
-  width: 400px;
-  height: 400px;
-}
+		div.gallery img {
+			width: 400px;
+			height: 400px;
+		}
 
-div.desc {
-  padding: 15px;
-  text-align: center;
-}
-</style>
+		div.desc {
+			padding: 15px;
+			text-align: center;
+		}
+	</style>
 
 </head>
 
 <body>
-    <div class="mypanel"></div>
+	<div class="mypanel"></div>
 
-    <script>
-    const urlSearchParams = new URLSearchParams(window.location.search);
-	const params = Object.fromEntries(urlSearchParams.entries());
-    $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage', function(data) {
-    	var text = 'results for '+params["gbifSpecies"]+"images: "+data.count+"<br>";
-        $.each(data.results, function() {
+	<script>
+		const urlSearchParams = new URLSearchParams(window.location.search);
+		const params = Object.fromEntries(urlSearchParams.entries());
+		var url = "" 
+		if ("datasetKey" in params) {
+			url = 'https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage&datasetKey='+params["datasetKey"]
+		} else {
+			url = 'https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license='+params["license"]+'&mediaType=StillImage'
+		}
+		$.getJSON(url, function(data) {
+			var text = 'results for '+params["gbifSpecies"]+"images: "+data.count+"<br>";
+			$.each(data.results, function() {
 
-            $.ajaxSetup({
-            async: false
-        }); 
-            console.log(this)
-            image = this
-        	$.getJSON('https://api.gbif.org/v1/organization/'+this.hostingOrganizationKey, function(orgdata){
-        		image.hostingOrganization = orgdata
-        	})
-            occuranceId = this.key  
-            localStorage.setItem('occuranceData_'+occuranceId, JSON.stringify(this));
+				$.ajaxSetup({
+					async: false
+				}); 
+				
+				image = this
+				$.getJSON('https://api.gbif.org/v1/organization/'+this.hostingOrganizationKey, function(orgdata){
+					image.hostingOrganization = orgdata
+				})
+				occuranceId = this.key  
+				localStorage.setItem('occuranceData_'+occuranceId, JSON.stringify(this));
+				console.log(localStorage)
 
-		    $.each(this.media, function() {	
-    		    if (this.identifier !== undefined)
-			    	text = text + `<div class="gallery">
-			                <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}' target='_blank'>` 
-			        text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a><div class="text-block"><h1>`;
-			        text +=  image.hostingOrganization.title;
-			        text += `</h1></div></div><div class="desc">Add a description of the image here</div></div>`;
-		    });
-		 });
 
-		    $(".mypanel").html(text);
-	});
-    </script>
+				$.each(this.media, function() {	
+					if (this.identifier !== undefined)
+						text = text + `<div class="gallery">
+					<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
+					text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a><div class="text-block"><h1>`;
+					text +=  image.hostingOrganization.title;
+					text += `</h1></div></div><div class="desc">Add a description of the image here</div></div>`;
+				});
+			});
+
+			$(".mypanel").html(text);
+		});
+	</script>
 
 </body>
 </html>
