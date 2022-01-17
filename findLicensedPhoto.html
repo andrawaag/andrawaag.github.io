@@ -75,9 +75,9 @@
 				localStorage.setItem('occuranceData_'+occuranceId, JSON.stringify(this));
 				
 
-
+				console.log(this)
 				$.each(this.media, function() {	
-					console.log(this)
+
 					if (this.identifier !== undefined)
 						text = text + `<div class="gallery">
 					<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
