@@ -29,7 +29,7 @@
 	text += "<tr><td>publisherOrg	 "+retrievedObject.publishingOrgKey+"</td></tr>"
 	// code to deal with license representations
 	retrievedObject.wmclicense = 'ambiguous';
-	switch (retrievedObject.license) {
+	switch (retrievedObject.media.license) {
 		//CC-BY
 		case "http://creativecommons.org/licenses/by/4.0/legalcode":
 		retrievedObject.wmclicense = "cc-by-4.0"
@@ -54,7 +54,7 @@
 		});
 		if (this.identifier == params["mediaId"])
 			text += "<tr><td>Creator:</td><td>"+this.identifier+"</td></tr>"
-		text += "<tr><td>Rights:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]+"</td></tr>"
+		text += "<tr><td>Rights:</td><td>"+this.license+"</td></tr>"
 		license = this["http://ns.adobe.com/xap/1.0/rights/UsageTerms"]
 		text += "<tr><td>Owner:</td><td>"+this["http://ns.adobe.com/xap/1.0/rights/Owner"]+"</td></tr>"
 		owner = this["http://ns.adobe.com/xap/1.0/rights/Owner"]
