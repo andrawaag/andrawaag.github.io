@@ -83,7 +83,7 @@
 					<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
 					text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a><div class="text-block"><h1>`;
 					text +=  image.hostingOrganization.title;
-					text += `</h1></div></div><div class="desc">Add a description of the image here</div></div>`;
+					text += `</h1></div></div><div class="desc">Institute: ${image.hostingOrganization.title}<br>License: ${image.license}</div></div>`;
 				});
 			});
 
