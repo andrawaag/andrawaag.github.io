@@ -105,9 +105,9 @@
 							text +=  image.hostingOrganization.title;
 							text += `</h1></div></div><div class="desc">Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
 							if (reusable) {
-								test += `Commons: <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
+								text += `Commons: <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
 							} else {
-								test += `Commons: media license not compatibe</div></div>`;
+								text += `Commons: media license not compatibe</div></div>`;
 							} 
 
 					};
