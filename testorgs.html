@@ -56,7 +56,7 @@
     taxon name: <input type="text" name="name" value="Euphorbia neriifolia"><br>
     <input type="submit" value="Submit">
   </form><hr>
-  <div class="mypanel"></div>
+  <div class="searching" style="display: none;" ><img src="https://upload.wikimedia.org/wikipedia/commons/1/10/Globo.gif"><br>searching</div>
   <script>
     var text = "" 
     function getLicensedRecords(gbifId, license, datasetKey) {
@@ -76,7 +76,7 @@
     $( "form" ).submit(function(event) {
       event.preventDefault();
       
-
+      $('.searching').show(); // to show image
       $.getJSON('https://api.gbif.org/v1/species/match?verbose=true&'+$(this).serialize(), function(namedata) {
         // Set the global configs to synchronous 
         $.ajaxSetup({
@@ -159,7 +159,8 @@
 
       });
         text = text + "</table>";  
-        $("#alternatives").html(text); 
+        $("#alternatives").html(text);
+        $('.searching').hide(); // to hide image 
       });
 });
 </script>
