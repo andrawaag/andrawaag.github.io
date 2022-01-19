@@ -77,13 +77,40 @@
 
 				console.log(this)
 				$.each(this.media, function() {	
+					switch (this.license) {
+						//CC-BY
+						case "http://creativecommons.org/licenses/by/4.0/legalcode":
+						case "http://creativecommons.org/licenses/by/4.0/":
+						//CC0
+						case "http://creativecommons.org/publicdomain/zero/1.0/legalcode":
+						case "http://creativecommons.org/publicdomain/zero/1.0/":
+						var reusable = true
+						break;
 
-					if (this.identifier !== undefined)
-						text = text + `<div class="gallery">
-					<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
-					text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a><div class="text-block"><h1>`;
-					text +=  image.hostingOrganization.title;
-					text += `</h1></div></div><div class="desc">Institute: ${image.hostingOrganization.title}<br>License: ${this.license}</div></div>`;
+						default:
+						var reusable = false
+
+					}
+
+					if (this.identifier !== undefined) {
+						if (reusable) {
+							text = text + `<div class="gallery">
+							<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
+							text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a><div class="text-block"><h1>`;
+						} else {
+							text = text + `<div class="gallery">`;
+	
+							text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/><div class="text-block"><h1>`;
+						}
+							text +=  image.hostingOrganization.title;
+							text += `</h1></div></div><div class="desc">Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
+							if (reusable) {
+								test += `Commons: <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
+							} else {
+								test += `Commons: media license not compatibe</div></div>`;
+							} 
+
+					};
 				});
 			});
 
