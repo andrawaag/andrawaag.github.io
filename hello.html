@@ -1,41 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<title>JavaScript - read JSON from URL</title>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-</head>
-
-<body>
-    <div class="mypanel"></div>
-
-    <script>
-    const urlSearchParams = new URLSearchParams(window.location.search);
-	const params = Object.fromEntries(urlSearchParams.entries());
-    $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+params["gbifSpecies"]+'&license=CC0_1_0&mediaType=StillImage', function(data) {
-    	var text = 'results for '+params["gbifSpecies"]+"<br>";
-        $.each(data.results, function() {   
-		    if ("http://rs.tdwg.org/ac/terms/Multimedia" in this.extensions) 
-		    	$.each(this.extensions["http://rs.tdwg.org/ac/terms/Multimedia"], function() {
-		    		if ("http://rs.tdwg.org/ac/terms/thumbnailAccessURI" in this)
-					    text = text + `
-					                <img src = '${this["http://rs.tdwg.org/ac/terms/thumbnailAccessURI"]}'/>
-					                `
-		    		else 
-		    			text = text + `
-					                <img src = '${this["http://rs.tdwg.org/ac/terms/accessURI"]}' width=100/>
-					                `});
-		    if ("http://rs.gbif.org/terms/1.0/Multimedia" in this.extensions) 
-		    	$.each(this.extensions["http://rs.gbif.org/terms/1.0/Multimedia"], function() {
-		    		if ("http://purl.org/dc/terms/identifier" in this)
-					    text = text + `
-					                <img src = '${this["http://purl.org/dc/terms/identifier"]}' width=100/>
-					                `
-                });
-		    });
-
-		    $(".mypanel").html(text);
-	});
-    </script>
-
-</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>Hello, world!</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Hello, world!</h1>
+    </main>
+  </body>
 </html>
