@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/pico.min.css">
+  <title>Tarsier GBIF image search</title>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <link rel="shortcut icon" href="/favicon.ico">
+  <style>
+
+    div.gallery {
+      margin: 5px;
+      border: 1px solid #ccc;
+      float: left;
+      width: 400px;
+    }
+
+    div.gallery:hover {
+      border: 1px solid #777;
+    }
+
+    div.gallery img {
+      width: 400px;
+      height: 400px;
+    }
+
+    div.desc {
+      padding: 15px;
+      text-align: center;
+    }
+
+
+  </style>
+
+</head>
+
+<body>
+    <div class="hero" data-theme="dark">
+      <nav class="container-fluid">
+        <ul><li><img src = "images/tarsier-01.png" width = 250></li>
+        <li><h3>Tarsier GBIF image search</h3>Tarsier is as wrapper around the GBIF api to find reusable images of taxa</li>
+        </ul>
+        <ul>
+        <li>
+          <form action="">
+            taxon name: <input type="text" name="name" value="Euphorbia neriifolia"><br>
+            <input type="submit" value="Submit">
+          </form></li></ul></nav>
+        
+        <main>
+          <hr>
+          <div class="searching" style="display: none;" ><img src="https://upload.wikimedia.org/wikipedia/commons/1/10/Globo.gif"><br>searching</div>
+          <div class="mainscreen" style="display: show;">
+            <ul>
+            <li><a href="https://gbif.org">GBIF</a> provides free and open access to biodiversity data </li>
+            <li>Some of the aggregated data sources contain images of specimens that with the an open license can be reused.</li>
+            <li>Tarsier queries the GBIF api for images with CC0 and CC-BY licenses.</li>
+            <li>Type the scientific name in the form in top right corner and press <code>Submit</code></li>
+            <li>If the applicable license is compatible with Wikimedia Commons, it is possible to upload the selected images to commons directly. This requires a Wikimedia account. 
+            <li>This website lives on <a href="https://github.com/andrawaag/andrawaag.github.io/">github</a>. <a href="https://github.com/andrawaag/andrawaag.github.io/issues">Feature requests and issues</a> are welcome, as well as pull requests. 
+          </ul>
+          </div>
+          <script>
+            var text = "" 
+            function getLicensedRecords(gbifId, license, datasetKey) {
+              $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+gbifId+'&license='+license+'&mediaType=StillImage&datasetKey='+datasetKey, function(data) {
+                $.ajaxSetup({
+                  async: false
+                });
+
+                if (data.count >0)  {
+                  var licenseCount = data.count
+                  $.getJSON('https://api.gbif.org/v1/dataset/'+datasetKey, function(data) {
+                    text =  text+"<li><a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license="+license+"&datasetKey="+datasetKey+"'>"+data.title+"</a>: "
+                  });
+                }
+              });
+            }
+            $( "form" ).submit(function(event) {
+              event.preventDefault();
+      $('.mainscreen').hide()
+      $('.searching').show(); // to show image
+      $.getJSON('https://api.gbif.org/v1/species/match?verbose=true&'+$(this).serialize(), function(namedata) {
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+          async: false
+        });
+        text = text + "<H2>results</h2><table border=1><tr><th>Taxon name</th><th>rank</th><th>GBIF taxon id</th><th>Locations with CC0</th><th>Locations with CC-BY</th></tr><tr><td>";
+        text = text+namedata.scientificName+"</td><td>"+namedata.rank+"</td><td><center>"+namedata.usageKey+"</center></td><td><ul>"
+        
+        var gbifId = namedata.usageKey
+
+        // CC0 licensed records
+        $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+          // Set the global configs to synchronous 
+          $.ajaxSetup({
+            async: false
+          });
+          $.each(data, function(k,v) {
+            $.ajaxSetup({
+              async: false
+            }); 
+            getLicensedRecords(gbifId, "CC0_1_0", k)
+          });
+        });
+        text = text + "</ul></td><td><ul>"
+        
+        // CC-BY licensed records
+        $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+          // Set the global configs to synchronous 
+          $.ajaxSetup({
+            async: false
+          });
+          $.each(data, function(k,v) {
+            $.ajaxSetup({
+              async: false
+            }); 
+            getLicensedRecords(gbifId, "CC_BY_4.0", k) 
+          });
+        });
+        text = text + "</ul></td></tr></table><HR>"
+        $("#main_results").html(text);
+
+        // Alternatives
+
+        text = "<h3>Alternatives</h3><table border=1><tr><th>Taxon name</th><th>rank</th><th>GBIF taxon id</th><th>Locations with CC0</th><th>Locations with CC-BY</th></tr>"
+        $.each(namedata.alternatives, function() { 
+          $.ajaxSetup({
+            async: false
+          });  
+          var gbifId = this.usageKey
+          text = text+"<tr><td>"+this.scientificName+"</td><td>"+this.rank+"</td><td><center>"+this.usageKey+"</center></td><td><ul>"
+
+          // CC0 licensed records
+          $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+            $.ajaxSetup({
+              async: false
+            });
+            $.each(data, function(k,v) {
+              $.ajaxSetup({
+                async: false
+              }); 
+              getLicensedRecords(gbifId, "CC0_1_0", k)
+            });
+          });
+          text = text + "</ul></td><td><ul>"
+        // CC=BY licensed records
+        $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+          $.ajaxSetup({
+            async: false
+          });
+          $.each(data, function(k,v) {
+            $.ajaxSetup({
+              async: false
+            }); 
+            getLicensedRecords(gbifId, "CC_BY_4.0", k) 
+            
+          });
+          text = text + "</ul></td></tr>"
+        });
+
+
+      });
+        text = text + "</table>";  
+        $("#alternatives").html(text);
+        $('.searching').hide(); // to hide image 
+      });
+    });
+  </script>
+
+  <p><tt id="main_results"></tt></p>
+  <p><tt id="alternatives"></tt></p>
+</main>
+<footer>
+  <hr>
+  Made by Andra Waagmeester for the Wikiproject Biodiversity
+</footer>
+</body>
+</html>
