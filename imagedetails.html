@@ -1,31 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 	<meta content="utf-8" http-equiv="encoding">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="css/pico.min.css">
+	<title>Tarsier GBIF image search</title>
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<link rel="shortcut icon" href="/favicon.ico">
 </head>
 
 
+<body>
+	<body>
+		<div class="hero" data-theme="dark">
+			<nav class="container-fluid">
+				<ul><li><img src = "images/tarsier-01.png" width = 250></li>
+					<li><h3>Tarsier GBIF image search</h3>Tarsier is a wrapper around the GBIF api to find reusable images of taxa</li>
+				</ul>
+			</nav>
+			<div class="mypanel"></div>
+			<script>
+				$.ajaxSetup({
+					async: false
+				});
 
-<div class="mypanel"></div>
-<script>
-	$.ajaxSetup({
-		async: false
-	});
+				const urlSearchParams = new URLSearchParams(window.location.search);
+				const params = Object.fromEntries(urlSearchParams.entries());
+				var retrievedObject = JSON.parse(localStorage.getItem('occuranceData_'+params.occurenceId));
+				console.log(localStorage)
+				text = "<center><h3>"+retrievedObject.acceptedScientificName+"</h3></center><table>";
 
-	const urlSearchParams = new URLSearchParams(window.location.search);
-	const params = Object.fromEntries(urlSearchParams.entries());
-	var retrievedObject = JSON.parse(localStorage.getItem('occuranceData_'+params.occurenceId));
-	console.log(localStorage)
-	text = "<center><h3>"+retrievedObject.acceptedScientificName+"</h3></center><table>";
-
-	text += "<table><tr><td><img src = '"+params.mediaId+"' width=500/></td><td><table>"
-	text += "<tr><td>GBIF ID "+retrievedObject.gbifID+"</td></tr>"
-	var gbifID = retrievedObject.gbifID
-	text += "<tr><td>license "+retrievedObject.license+"</td></tr>"
-	text += "<tr><td>acceptedScientificName "+retrievedObject.acceptedScientificName+"</td></tr>"
-	text += "<tr><td>publisherOrg	 "+retrievedObject.hostingOrganization.title +"</td></tr>"
+				text += "<table><tr><td><img src = '"+params.mediaId+"' width=500/></td><td><table>"
+				text += "<tr><td>GBIF ID "+retrievedObject.gbifID+"</td></tr>"
+				var gbifID = retrievedObject.gbifID
+				text += "<tr><td>license "+retrievedObject.license+"</td></tr>"
+				text += "<tr><td>acceptedScientificName "+retrievedObject.acceptedScientificName+"</td></tr>"
+				text += "<tr><td>publisherOrg	 "+retrievedObject.hostingOrganization.title +"</td></tr>"
 	// code to deal with license representations
 	retrievedObject.wmclicense = 'ambiguous';
 	
@@ -36,21 +47,21 @@
 			async: false
 		});
 		switch (this.license) {
-		//CC-BY
-		case "http://creativecommons.org/licenses/by/4.0/legalcode":
-		retrievedObject.wmclicense = "cc-by-4.0"
-		break ;
-		case "http://creativecommons.org/licenses/by/4.0/":
-		retrievedObject.wmclicense = "cc-by-4.0"
-		break ;
-		//CC0
-		case "http://creativecommons.org/publicdomain/zero/1.0/legalcode":
-		retrievedObject.wmclicense = "Cc-zero"
-		break ;
-		case "http://creativecommons.org/publicdomain/zero/1.0/":
-		retrievedObject.wmclicense = "Cc-zero"
-		break ;
-	} 
+			//CC-BY
+			case "http://creativecommons.org/licenses/by/4.0/legalcode":
+			retrievedObject.wmclicense = "cc-by-4.0"
+			break ;
+			case "http://creativecommons.org/licenses/by/4.0/":
+			retrievedObject.wmclicense = "cc-by-4.0"
+			break ;
+			//CC0
+			case "http://creativecommons.org/publicdomain/zero/1.0/legalcode":
+			retrievedObject.wmclicense = "Cc-zero"
+			break ;
+			case "http://creativecommons.org/publicdomain/zero/1.0/":
+			retrievedObject.wmclicense = "Cc-zero"
+			break ;
+		} 
 		if (this.identifier == params["mediaId"])
 			text += "<tr><td>image source:</td><td>"+this.identifier+"</td></tr>"
 		text += "<tr><td>License:</td><td>"+this.license+"</td></tr>"
