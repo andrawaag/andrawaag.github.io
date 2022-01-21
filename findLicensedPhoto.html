@@ -110,11 +110,11 @@
 						} else {
 							text = text + `<div class="gallery">`;
 							text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/>`}
-							text += `</div><div class="desc">Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
+							text += `</div><div class="desc">GBIF occuranceId: <a href ='https://gbif.org/occurrence/${occuranceId}'>${occuranceId}</a><br> Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
 							if (reusable) {
 								text += `Commons: <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
 							} else {
-								text += `Commons: media license not compatibe</div></div><hr>`;
+								text += `Commons: media license not compatible</div></div><hr>`;
 							} 
 
 						};
