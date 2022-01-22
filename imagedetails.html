@@ -82,8 +82,9 @@
 	url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3Dhttps://www.gbif.org/occurrence/"+retrievedObject.gbifID+"%0A"
 	//author
 	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title 
-	if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
-		url += encodeURIComponent(" ("+retrievedObject.rightsHolder+")")
+	if (retrievedObject.rightsHolder !== undefined)
+		if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
+			url += encodeURIComponent(" ("+retrievedObject.rightsHolder+")")
 	if (retrievedObject.recordedBy !== undefined)
 		url += encodeURIComponent(" ("+escape(retrievedObject.recordedBy)+")")
 
