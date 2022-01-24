@@ -60,6 +60,11 @@
 			case "http://creativecommons.org/publicdomain/zero/1.0/":
 			retrievedObject.wmclicense = "Cc-zero"
 			break ;
+			//CC-BY-SA
+			case "http://creativecommons.org/licenses/by-sa/4.0/":
+			retrievedObject.wmclicense = "cc-by-sa-4.0"
+			break ;
+
 		} 
 		if (this.identifier == params["mediaId"])
 			text += "<tr><td>image source:</td><td>"+this.identifier+"</td></tr>"
