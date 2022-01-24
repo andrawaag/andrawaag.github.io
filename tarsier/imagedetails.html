@@ -41,7 +41,7 @@
 	retrievedObject.wmclicense = 'ambiguous';
 	
 	source = "" 
-	title =encodeURIComponent(retrievedObject.acceptedScientificName+gbifID)
+	title =encodeURIComponent(retrievedObject.acceptedScientificName+" "+gbifID)
 	$.each(retrievedObject.media, function() {
 		$.ajaxSetup({
 			async: false
