@@ -15,7 +15,7 @@
 	<body>
 		<div class="hero">
 			<nav class="container-fluid">
-				<ul><li><img src = "images/tarsier-01.png" width = 250></li>
+				<ul><li><a href="index.html"><img src = "images/tarsier-01.png" width = 250></a></li>
 					<li><h3>Tarsier GBIF image search</h3>Tarsier is a wrapper around the GBIF api to find reusable images of taxa</li>
 				</ul>
 			</nav>
@@ -81,7 +81,7 @@
 
 	url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3Dhttps://www.gbif.org/occurrence/"+retrievedObject.gbifID+"%0A"
 	//author
-	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title 
+	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title.replace("'", "%27") 
 	if (retrievedObject.rightsHolder !== undefined)
 		if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
 			url += encodeURIComponent(" ("+retrievedObject.rightsHolder+")")
