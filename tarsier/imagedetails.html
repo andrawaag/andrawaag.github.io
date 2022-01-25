@@ -42,6 +42,7 @@
 	
 	source = "" 
 	title =encodeURIComponent(retrievedObject.acceptedScientificName+" "+gbifID)
+	var instituteTemplate = ""
 	$.each(retrievedObject.media, function() {
 		$.ajaxSetup({
 			async: false
@@ -69,7 +70,7 @@
 
 		} 
 		// Institutes
-		instituteTemplate = ""
+		
 		switch (retrievedObject.hostingOrganization.title) {
 			case "Naturalis Biodiversity Center":
 			instituteTemplate = "{{Institution:Naturalis}}"
