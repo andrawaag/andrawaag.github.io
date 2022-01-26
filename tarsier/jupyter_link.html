@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <title>Tarsier GBIF image search</title>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <link rel="shortcut icon" href="/favicon.ico">
+<script>
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  const params = Object.fromEntries(urlSearchParams.entries());
+  var text = "" 
+  function getLicensedRecords(gbifId, license, datasetKey) {
+    $.getJSON('https://api.gbif.org/v1/occurrence/search?taxonKey='+gbifId+'&license='+license+'&mediaType=StillImage&datasetKey='+datasetKey, function(data) {
+      $.ajaxSetup({
+        async: false
+      });
+
+      if (data.count >0)  {
+        $.getJSON('https://api.gbif.org/v1/dataset/'+datasetKey, function(data) {
+          text =  text+"<li><a href='findLicensedPhoto.html?gbifSpecies="+gbifId+"&license="+license+"&datasetKey="+datasetKey+"'>"+data.title+"</a>: "
+        });
+      }
+    });
+  }
+  $.getJSON('https://api.gbif.org/v1/species/match?verbose=true&name='+escape(params["name"]), function(namedata) {
+    console.log(namedata)
+        // Set the global configs to synchronous 
+        $.ajaxSetup({
+          async: false
+        });
+        text = text+namedata.scientificName+", "+namedata.rank+"<hr><ul>"
+        
+        var gbifId = namedata.usageKey
+
+        // CC0 licensed records
+        $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+          // Set the global configs to synchronous 
+          $.ajaxSetup({
+            async: false
+          });
+          $.each(data, function(k,v) {
+            $.ajaxSetup({
+              async: false
+            }); 
+            getLicensedRecords(gbifId, "CC0_1_0", k)
+          });
+        });
+        
+        // CC-BY licensed records
+        $.getJSON('https://api.gbif.org/v1/occurrence/counts/datasets?taxonKey='+gbifId, function(data) {
+          // Set the global configs to synchronous 
+          $.ajaxSetup({
+            async: false
+          });
+          $.each(data, function(k,v) {
+            $.ajaxSetup({
+              async: false
+            }); 
+            getLicensedRecords(gbifId, "CC_BY_4.0", k) 
+            
+          });
+        });
+        text = text + "</ul>"
+        $("#main_results").html(text);
+      });
+    </script>
+
+    <p><tt id="main_results"></tt></p>
+  </main>
+  </html>
