@@ -121,7 +121,7 @@
 		url += encodeURIComponent("{{location|"+retrievedObject.decimalLatitude+"|"+retrievedObject.decimalLongitude+"}}")
 
 	url += encodeURIComponent("{{Gbif|"+retrievedObject.gbifID+"}}")
-	url += encodeURIComponent("Category:Reuse images with Tarsier")
+	url += encodeURIComponent("{{Category:Reuse images with Tarsier}}")
 	url+="&wpLicense="+retrievedObject.wmclicense+"&wpDestFile="+retrievedObject.acceptedScientificName+" "+retrievedObject.gbifID+extension+"&wpSourceType=url&wpUploadFileURL="+params.mediaId
 
 	text += "<a href = '"+url+"' target='_new'>upload2commons</a><br><br>"
