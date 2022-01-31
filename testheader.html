@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="css/pico.min.css">
+	<title>Tarsier GBIF image search</title>
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<link rel="shortcut icon" href="/favicon.ico">
+</head>
+<script type="text/javascript">
+	console.log("boebeloe")
+	$.get( "https://images.ala.org.au/image/0aec2e02-492f-45cf-84b6-076db23bb277", function( data ) {
+  console.log( typeof data ); // string
+  console.log( data ); // HTML content of the jQuery.ajax page
+});
+
+</script>
