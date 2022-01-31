@@ -103,7 +103,7 @@
 
 	url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3Dhttps://www.gbif.org/occurrence/"+retrievedObject.gbifID+"%0A"
 	if (instituteTemplate != ""){
-		url += "%7Cauthor%3D"+instituteTemplate.replace("'", "%27") 
+		url += "%7Cauthor%3D"+instituteTemplate.replace("'", "%27").replace("&", "%26")
 	} else {
 
 
@@ -111,9 +111,9 @@
 	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title.replace("'", "%27") 
 	if (retrievedObject.rightsHolder !== undefined)
 		if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
-			url += encodeURIComponent(" ("+retrievedObject.rightsHolder+")")
+			url += encodeURIComponent(" ("+retrievedObject.rightsHolder.replace("'", "%27") +")")
 		if (retrievedObject.recordedBy !== undefined)
-			url += encodeURIComponent(" ("+escape(retrievedObject.recordedBy)+")")
+			url += encodeURIComponent(" ("+retrievedObject.recordedBy.replace("'", "%27") +")")
 	}
 
 	url+="%0A%7Cpermission%3D%0A%7Cother%20versions%3D%0A%7D%7D%0A%0A%5B%5BCategory%3A"+encodeURIComponent(retrievedObject[retrievedObject["taxonRank"].toLowerCase()])+"%5D%5D%0A"
@@ -121,6 +121,7 @@
 		url += encodeURIComponent("{{location|"+retrievedObject.decimalLatitude+"|"+retrievedObject.decimalLongitude+"}}")
 
 	url += encodeURIComponent("{{Gbif|"+retrievedObject.gbifID+"}}")
+	url += encodeURIComponent("Category:Reuse images with Tarsier")
 	url+="&wpLicense="+retrievedObject.wmclicense+"&wpDestFile="+retrievedObject.acceptedScientificName+" "+retrievedObject.gbifID+extension+"&wpSourceType=url&wpUploadFileURL="+params.mediaId
 
 	text += "<a href = '"+url+"' target='_new'>upload2commons</a><br><br>"
