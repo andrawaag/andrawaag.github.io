@@ -111,9 +111,9 @@
 	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title.replace("'", "%27") 
 	if (retrievedObject.rightsHolder !== undefined)
 		if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
-			url += encodeURIComponent(" ("+retrievedObject.rightsHolder.replace("'", "%27") +")")
+			url += encodeURIComponent(" ("+retrievedObject.rightsHolder.replace("'", "%27").replace("|", ", ") +")")
 		if (retrievedObject.recordedBy !== undefined)
-			url += encodeURIComponent(" ("+retrievedObject.recordedBy.replace("'", "%27") +")")
+			url += encodeURIComponent(" ("+retrievedObject.recordedBy.replace("'", "%27").replace("|", ", ") +")")
 	}
 
 	url+="%0A%7Cpermission%3D%0A%7Cother%20versions%3D%0A%7D%7D%0A%0A%5B%5BCategory%3A"+encodeURIComponent(retrievedObject[retrievedObject["taxonRank"].toLowerCase()])+"%5D%5D%0A"
