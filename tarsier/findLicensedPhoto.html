@@ -80,8 +80,8 @@
 					$.getJSON('https://api.gbif.org/v1/organization/'+this.hostingOrganizationKey, function(orgdata){
 						image.hostingOrganization = orgdata
 					})
-					occuranceId = this.key  
-					localStorage.setItem('occuranceData_'+occuranceId, JSON.stringify(this));
+					occurrenceId = this.key  
+					localStorage.setItem('occuranceData_'+occurrenceId, JSON.stringify(this));
 
 
 					console.log(this)
@@ -107,14 +107,14 @@
 					if (this.identifier !== undefined) {
 						if (reusable) {
 							text = text + `<div class="gallery">
-							<a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>`; 
+							<a href='imagedetails.html?occurenceId=${occurrenceId}&mediaId=${this.identifier}'>`; 
 							text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/></a>`;
 						} else {
 							text = text + `<div class="gallery">`;
 							text += `  <div class="container"><img src = '${this.identifier}' height=400 width=400/>`}
-							text += `</div><div class="desc">GBIF occuranceId: <a href ='https://gbif.org/occurrence/${occuranceId}'>${occuranceId}</a><br> Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
+							text += `</div><div class="desc">GBIF occurrenceId: <a href ='https://gbif.org/occurrence/${occurrenceId}'>${occurrenceId}</a><br> Institute: ${image.hostingOrganization.title}<br>License: ${this.license}<br>` 
 							if (reusable) {
-								text += `Commons: <a href='imagedetails.html?occurenceId=${occuranceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
+								text += `Commons: <a href='imagedetails.html?occurenceId=${occurrenceId}&mediaId=${this.identifier}'>Upload</a></div></div>`;
 							} else {
 								text += `Commons: media license not compatible</div></div><hr>`;
 							} 
