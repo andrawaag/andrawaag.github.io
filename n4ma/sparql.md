@@ -21,7 +21,7 @@
 {{ rec.md }}
 
 ```sparql
-    {{ rec.rq }}
+{{ rec.rq }}
 ```
 
 <iframe style="width: 100%; height: 50vh; border: none;"
