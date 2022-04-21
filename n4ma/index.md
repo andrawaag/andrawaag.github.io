@@ -12,7 +12,7 @@
 }
 </script>
 
-# N4ma_concept Demonstrator (v0.0.2)
+# N4ma_concept Demonstrator (v0.0.3)
 
 © 2022 Andra Waagmeester and Josh Moore
 

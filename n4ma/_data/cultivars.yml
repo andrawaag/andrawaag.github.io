@@ -4,16 +4,48 @@
    A [cultivar](https://en.wikipedia.org/wiki/Cultivar) is a type of plant that is specifically bread for desired set of traits. This query
     collects all cultivars in Wikidata and their data.
   rq-name: Get all cultivars
-  rq-path: ../_sparql/cultivars/cultivars.rq
+  rq: |
+    PREFIX wd:<http://www.wikidata.org/entity/
+    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+    SELECT * WHERE {
+       ?item wdt:P31 wd:Q4886 .
+    }
 
 - name: Cultivars which a common parent clade
   md: |
    This query collects all cultivars which have a common parent clade.
-  rq-name: Get cultivars with common parent clade
-  rq-path: ../_sparql/cultivars/cultivars_common_parent_clade.rq
+  rq: |
+    #defaultView:Tree
+    PREFIX wd: <http://www.wikidata.org/entity/>
+    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    
+    SELECT * WHERE {
+         ?item wdt:P31 wd:Q4886 ;
+               rdfs:label ?itemLabel ;
+               wdt:P171* ?taxon .
+         ?taxon rdfs:label ?taxonLabel .
+      FILTER (lang(?itemLabel) = "en")
+      FILTER (lang(?taxonLabel) = "en")
+      }
 
 - name: Images of cultivars which are in a common parent clade
   md: |
    This query collects all images of cultivars which are in a common parent clade.
-  rq-name: Get images of cultivars with common parent clade
-  rq-path: ../_sparql/cultivars/cultivars_common_parent_clade_images.rq
+  rq: |
+    #defaultView:ImageGrid
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX wd: <http://www.wikidata.org/entity/>
+    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+    SELECT ?clade ?cladeLabel ?cultivar ?cultivarLabel ?image WHERE {
+       VALUES ?clade {wd:Q21723} #solanalis
+         ?cultivar wdt:P31 wd:Q4886 ;
+               rdfs:label ?cultivarLabel ;
+               wdt:P171* ?clade .
+         ?clade rdfs:label ?cladeLabel .
+      OPTIONAL {?cultivar wdt:P18 ?image .}
+      FILTER (lang(?cultivarLabel) = "en")
+      FILTER (lang(?cladeLabel) = "en")
+      }
