@@ -21,7 +21,7 @@
 {{ rec.md }}
 
 ```sparql
-{% include rec.rq-path %}
+{% include {{rec.rq-path}} %}
 ```
 
 <iframe style="width: 100%; height: 50vh; border: none;"
