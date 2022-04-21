@@ -1,0 +1,43 @@
+title: "ΔTissue Demonstrator"
+description: "Demonstration of Linked Data queries for the ΔTissue project."
+author: "Andra Waagmeester & Josh Moore"
+
+theme: minima
+
+# markdown: kramdown
+# remote_theme: "mmistakes/minimal-mistakes@4.24.0"
+
+plugins:
+  - jekyll-feed
+  - jekyll-include-cache
+  - jekyll-sitemap
+  - jekyll-datapage-generator
+
+exclude:
+  - sparql.md
+  - CHANGELOG.md
+
+
+# Doesn't work on GitHub Pages
+page_gen-dirs: true
+page_gen:
+- data: gliobastoma
+  template: sparql.rq
+  dir: sparql/glioblastoma
+  index_files: true
+  extension: .rq
+- data: pubrecord
+  template: sparql.rq
+  dir: sparql/pubrecord
+  index_files: true
+  extension: .rq
+- data: tnbc
+  template: sparql.rq
+  dir: sparql/tnbc
+  index_files: true
+  extension: .rq
+- data: tuberculosis
+  template: sparql.rq
+  dir: sparql/tuberculosis
+  index_files: true
+  extension: .rq

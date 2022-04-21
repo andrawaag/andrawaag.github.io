@@ -1,0 +1,19 @@
+---
+- name: Data on cultivars in Wikidata
+  md: |
+   A [cultivar](https://en.wikipedia.org/wiki/Cultivar) is a type of plant that is specifically bread for desired set of traits. This query
+    collects all cultivars in Wikidata and their data.
+  rq-name: Get all cultivars
+  rq-path: _sparql/cultivars.rq
+
+- name: Cultivars which a common parent clade
+  md: |
+   This query collects all cultivars which have a common parent clade.
+  rq-name: Get cultivars with common parent clade
+  rq-path: _sparql/cultivars_common_parent_clade.rq
+
+- name: Images of cultivars which are in a common parent clade
+  md: |
+   This query collects all images of cultivars which are in a common parent clade.
+  rq-name: Get images of cultivars with common parent clade
+  rq-path: _sparql/cultivars_common_parent_clade_images.rq

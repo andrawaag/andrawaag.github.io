@@ -1,0 +1,16 @@
+#defaultView:ImageGrid
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+SELECT ?clade ?cladeLabel ?cultivar ?cultivarLabel ?image WHERE {
+   VALUES ?clade {wd:Q21723} #solanalis
+     ?cultivar wdt:P31 wd:Q4886 ;
+           rdfs:label ?cultivarLabel ;
+           wdt:P171* ?clade .
+     ?clade rdfs:label ?cladeLabel .
+  OPTIONAL {?cultivar wdt:P18 ?image .}
+  FILTER (lang(?cultivarLabel) = "en")
+  FILTER (lang(?cladeLabel) = "en")
+  }
+
