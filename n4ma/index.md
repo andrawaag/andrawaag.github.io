@@ -71,7 +71,7 @@ Please note that the queries in this repository were written by the authors who 
 {% endfor %}
     </ol>
   </li>
-  <li><a href="data.html">Data Resources</a>
+  <li>Data Resources
     <ol><li>....</li></ol>
   </li>
 </ol>
