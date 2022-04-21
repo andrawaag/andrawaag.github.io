@@ -59,25 +59,20 @@ Please note that the queries in this repository were written by the authors who 
   </li>
   <li><a href="cultivars.html">Cultivars</a>
     <ol>
-{% for rec in site.data.tnbc %}
+{% for rec in site.data.cultivars %}
    <li><a href="cultivars.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
   </li>
-  <li><a href="climate_change.html">Glioblastoma</a>
+  <li><a href="climate_change.html">Climate Change</a>
     <ol>
-{% for rec in site.data.glioblastoma%}
+{% for rec in site.data.climate_change%}
    <li><a href="climate_change.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
   </li>
   <li><a href="data.html">Data Resources</a>
-    <ol>
-   <li><a href="data.html#tcga">TCGA</a></li>
-    </ol>
-    <ol>
-   <li><a href="data.html#sfaira">sfaira</a></li>
-    </ol>
+    <ol><li>....</li></ol>
   </li>
 </ol>
 
