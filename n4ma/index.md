@@ -3,16 +3,17 @@
   "@context": "http://schema.org",
   "@type": "Book",
   "inLanguage": "en-US",
-  "name": "n4ma_concept Demonstrator",
+  "name": "N4MA Demonstrator",
   "publisher": {
     "@type": "Organization",
     "name": "GitHub"
   },
   "copyrightYear": "2022",
+  "discussionUrl": "https://github.com/German-BioImaging/dtqueries/issues"
 }
 </script>
 
-# N4ma_concept Demonstrator (v0.0.3)
+# ΔTissue Demonstrator (v0.0.4)
 
 © 2022 Andra Waagmeester and Josh Moore
 
@@ -22,57 +23,52 @@ License: [<img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/p
 
 <img src="{{site.baseurl}}/images/cloud.png" width="50%"/>
 
-This is the first release of the n4ma_concept Demonstrator which provides starting points for the exploration of public, linked data.
+This is the first release of the N4MA Demonstrator which provides starting points for the exploration of public, linked data.
 Linked data is core to FAIR data sharing and is a key component of the FAIR data model. In this release
-we use Wikidata as a central hub for linked data related to the n4ma_concept areas (Cultivars, publications, climate change).
+we use Wikidata as a central hub for linked data related to the ΔTissue disease areas (Cultivars, Publications records, Climate Change).
 
-Finally, other sites like [Scholia](https://scholia.toolforge.org/) provide enhanced
+Resources that are reachable via data links include:
+
+* ....
+
+Other sites like [Scholia](https://scholia.toolforge.org/) provide enhanced
 visualization of the existing data links, like the image above showing the topics
 of all ΔTissue authors who could be found in Wikidata.
 
-For the purpose of this demonstrator workflows have been developed:
+For the purpose of this demonstrator two workflows have been developed:
 
-1. to complete publication records for a list of authors and publications
-2. to make biological pathways published in the scientific literature machine readable
+1. complete publication records for a list of authors and publications
+2. make biological pathways published in the scientific literature machine readable (TODO)
 
-In some cases, entries have been created in Wikidata and elsewhere in order to establish initial links.
-This, however, has not been done systematically without the input of the domain experts.
+and used to create some, non-systematic entries in Wikidata and other resources
+to establish initial links.
 
-The demonstrator is a POC to explore existing linked data on the n4ma_concept disease areas in Wikidata.
-Currently, the coverage of Wikidata on the ΔTissue disease areas appears to be incomplete.
+The demonstrator, however, is a POC to explore existing linked data on the N4MA areas in Wikidata.
+Currently, the coverage of Wikidata on the N4MA areas appears to be incomplete.
 Relevant data either needs to be added systematically or the existing data needs to be updated, keeping in mind that
 Wikidata follows applies a CC0 license. Many resources do not. To be able to render a full picture of
 the linked data cloud related to the disease areas, either more public data must be added or a linked-data
 resource that hosts non-CC0 data will be needed.
 
-Please note that the queries in this repository were written by the authors who are not domain experts in the different research areas.
-
 ## Contents
 
 <ol>
-  <li><a href="pubrecord.html">Publication Records</a>
+  <li><a href="pubrecord.html">Publication Record</a>
     <ol>
 {% for rec in site.data.pubrecord %}
    <li><a href="pubrecord.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
   </li>
-  <li><a href="cultivars.html">Cultivars</a>
+  <li><a href="cultivars.html">Triple-negative breast record</a>
     <ol>
-{% for rec in site.data.cultivars %}
+{% for rec in site.data.tnbc %}
    <li><a href="cultivars.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
   </li>
-  <li><a href="climate_change.html">Climate Change</a>
-    <ol>
-{% for rec in site.data.climate_change%}
-   <li><a href="climate_change.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
-  </li>
-  <li>Data Resources
-    <ol><li>....</li></ol>
   </li>
 </ol>
 

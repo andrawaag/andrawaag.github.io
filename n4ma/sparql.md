@@ -7,14 +7,15 @@
 {% endfor %}
 </ol>
 
-<br/>
-
 {% for rec in sparql %}
+
+<br/>
 
 ----
 
 <br/>
 
+[Contents ↑](#contents)
 
 ## {{ rec.name }}
 
@@ -28,11 +29,5 @@
         src="{{ rec.srv | default: 'https://query.wikidata.org' }}/embed.html#{{ rec.rq | uri_escape }}"
         referrerpolicy="origin" sandbox="allow-scripts allow-same-origin allow-popups">
 </iframe>
-
-<br/>
-
-[Contents ↑](#contents)
-
-<br/>
 
 {% endfor %}

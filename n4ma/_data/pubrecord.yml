@@ -1,8 +1,7 @@
 ---
 - name: Leap group leaders
   md: |
-    Group leaders for whom a record in could be identified in Wikidata. New records
-    can be added by anyone and tools exist to ease the process.
+    Group leaders for whom their is already a record in wikidata.
   rq: |
     #title:Leap group leaders
     SELECT * WHERE {
@@ -29,8 +28,8 @@
 
 - name: Group leaders and their past and present affiliations
   md: |
-    All affiliations of known group leaders, including past and present. With a Wikidata update, it will
-    be possible to also query if the affiliation is current or not.
+    All the affiliations of group leaders, including past and present. Future vesions of this query
+    will also if the affiliation is current or not. This requires an data update.
   rq: |
     #title: Group leaders and their past and present affiliations
     PREFIX wd: <http://www.wikidata.org/entity/>
@@ -50,10 +49,9 @@
 
 - name: Group leaders and their publication records
   md: |
-    The following query lists the publication records of the known group
-    leaders. Since the list is quite extensive a different visualization is
-    applied. The Wikidata Query Service features various visualizations for the
-    results. In this query the Tree visualization is used.
+    The following query lists the publication records of the group leaders. Since the list is quite extensive a different 
+    visualization is applied. The Wikidata Query Service features various visualizations for the results.
+    In this query the Tree visualization is used.
   rq: |
     #title:Group leaders and their publication records
     #defaultView:Tree
@@ -77,9 +75,8 @@
 
 - name: Publications and their topics
   md: |
-    The following query lists publications and their topics. Since the list is
-    quite extensive, a BubbleChart is applied. The size of the bubbles is
-    determined by the number of publications linked to specific topic.
+    The following query lists the publications and their topics. Since the list is quite extensive a BubbleChart is applied. 
+    The sice of the bubbles is determined by the number of publications linked to specific topic.
   rq: |
     #title:Publications and their topics
     #defaultView:BubbleChart
@@ -102,10 +99,9 @@
 
 - name: Author name strings and their publications
   md: |
-    Sometimes an author exists in Wikidata only by its name string. When this
-    is the case, authors are not linked to their publication. The author names
-    need to be linked to their respective identifiers. The author disambiguator
-    can be used to link the author name string to the author identifier.
+    Sometimes an author exists in Wikidata only by its name string. When this is the case, the authors are not linked to their publication. 
+    The author names need to be linked to their respective identifiers. The author disambiguator can be used to 
+    link the author name string to the author identifier.
   rq: |
     #title:Author name strings and their publications
     #description:Finds publications by author name strings

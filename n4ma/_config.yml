@@ -15,15 +15,14 @@ plugins:
 
 exclude:
   - sparql.md
-  - CHANGELOG.md
 
 
 # Doesn't work on GitHub Pages
 page_gen-dirs: true
 page_gen:
-- data: gliobastoma
+- data: cultivars
   template: sparql.rq
-  dir: sparql/glioblastoma
+  dir: sparql/cultivars
   index_files: true
   extension: .rq
 - data: pubrecord
@@ -31,13 +30,8 @@ page_gen:
   dir: sparql/pubrecord
   index_files: true
   extension: .rq
-- data: tnbc
+- data: climate_change
   template: sparql.rq
-  dir: sparql/tnbc
-  index_files: true
-  extension: .rq
-- data: tuberculosis
-  template: sparql.rq
-  dir: sparql/tuberculosis
+  dir: sparql/climate_change
   index_files: true
   extension: .rq
