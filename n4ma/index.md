@@ -68,8 +68,6 @@ resource that hosts non-CC0 data will be needed.
     </ol>
   </li>
 {% endfor %}
-    </ol>
-  </li>
 </ol>
 
 ## Future work
