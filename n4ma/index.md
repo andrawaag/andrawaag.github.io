@@ -13,7 +13,7 @@
 }
 </script>
 
-# ΔTissue Demonstrator (v0.0.4)
+# N4MA Demonstrator (v0.0.4)
 
 © 2022 Andra Waagmeester and Josh Moore
 
