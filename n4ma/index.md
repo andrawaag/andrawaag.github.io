@@ -62,7 +62,7 @@ resource that hosts non-CC0 data will be needed.
   </li>
   <li><a href="cultivars.html">Triple-negative breast record</a>
     <ol>
-{% for rec in site.data.tnbc %}
+{% for rec in site.data.cultivars %}
    <li><a href="cultivars.html#{{rec.name | slugify }}">{{ rec.name  }}</a></li>
 {% endfor %}
     </ol>
