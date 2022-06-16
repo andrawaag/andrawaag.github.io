@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DDI4 Schema</title>
+    <style>
+      #loadform { float: left; border: thin solid #f77; }
+      .result { float:left; }
+      .keyword { color: #818; }
+      .scalar { background-color: #eee; }
+      #sources { font-size: small }
+      .record { margin-right: .1em; margin-left: -.8em; font-size: .5em; color: blue; }
+      p { margin: 0; }
+      p, .comment { background-color: #eee; }
+    </style>
+    <style>
+      h1 { font-size: 1.3em; }
+      h1, p, ul { margin: 0; margin-left: .1em; }
+      .passes999 { margin-right: 1em; }
+      .passes, #results div .passes { padding-left: .1em; border-left: thick solid #bfb; }
+      .pair.passes { border-left: none; padding-left: none; }
+      .pair.passes { background-color: #bfb; }
+      .fails , #results div .fails  { padding-left: .1em; border-left: thick solid #fbb; }
+      .pair.fails { border-left: none; padding-left: none; }
+      .pair.fails { background-color: #fbb; }
+      .error , #results div .error  { padding-left: .1em; border-left: thick solid #b00; }
+      .running { background-color: #ddf; }
+
+#menuForm > fieldset {
+    box-shadow: -.3ex .3ex grey;
+    display: inline;
+}
+
+#controls {
+    position: absolute;
+    left: 0;
+    top: 0;
+    list-style: none;
+    margin: 0;
+    display: none;
+    background: white; opacity: 1;
+    border: thin solid buttontext;
+    /* box-shadow: -.3ex .3ex grey; */
+}
+#controls div {
+    border: 10px solid buttonface;
+}
+#controls h3 {
+    margin: 0;
+}
+#menu-button { margin-left: 1em; }
+#menu-button svg { width: 1em; height: 1.5ex; }
+#about {
+  margin: 3em;
+}
+#dismiss-about { text-align: center; }
+#controls ul { padding-left: 0; margin-left: 0; list-style-type: none; }
+#controls li { padding: 0 1em; }
+#controls li.menuitem:hover { background-color: buttonface; }
+
+      th { text-align: left; }
+      td { padding: 0; }
+      td:nth-child(2) { padding: 0 1em; }
+table {
+    border-collapse: collapse;
+    }
+    tr { border-top-width: 0; border-bottom-width: 0; }
+/*
+    .inc1 td { background-color: #fdd; border-left: thin solid #ecc; }
+    .inc2 td { background-color: #eed; border-left: thin solid #ddc; }
+    .inc3 td { background-color: #dfd; border-left: thin solid #cec; }
+    */
+
+    .inc1   { border-color: #fbb; border-width: 4px; background-color: #fff7f7; }
+    .inc2   { border-color: #ddf; border-width: 4px; background-color: #f7f7ff; }
+    .inc3   { border-color: #bfb; border-width: 4px; background-color: #f0fff0; }
+    .inc4   { border-color: #fdd; border-width: 4px; }
+    .inc5   { border-color: #bbf; border-width: 4px; }
+    .inc6   { border-color: #dfd; border-width: 4px; }
+    td:nth-child(1) .inc1  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(1) .inc2  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(1) .inc3  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(1) .inc4  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(1) .inc5  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(1) .inc6  { border-left-width: 4px; border-right-style: solid; }
+    td:nth-child(4) .inc1 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    td:nth-child(4) .inc2 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    td:nth-child(4) .inc3 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    td:nth-child(4) .inc4 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    td:nth-child(4) .inc5 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    td:nth-child(4) .inc6 { border-right-width: 4px; border-left-style: solid; text-align: right; }
+    .top { border-top-style   : solid; }
+    .bot { border-bottom-style: solid; }
+    .tag { border-bottom-style: solid; }
+    .inc1 .tag { border-color: #fbb; }
+    .inc2 .tag { border-color: #ddf; }
+    .inc3 .tag { border-color: #bfb; }
+    pre.schema.shexc999:before { content: "‣"; width: 9em; }
+    .bar:before {
+      color: #333;
+      font-size: .6em;
+      border: 1px solid #bbb;
+      background: white;
+      display: block;
+      font-family: sans-serif;
+      padding: 0.2em 1em;
+    }
+
+    /*
+border-left: 1px solid #fdd;
+    border-top:    1px solid  #ff0;
+    border-right:  2px dashed #f0F;
+    border-bottom: 3px dotted #f00;
+    border-left:   5px solid  #09f;
+    */
+    .row { display: flex; }
+    .row_cell { width: 70%; }
+    .clear { border-left:thick solid #ffffff; background-color: #ffffff; }
+    .in1 { border-left:thick solid #fcecec; background-color: #fff0f0; }
+    .in2 { border-left:thick solid #f0fff0; background-color: #f0fff0; }
+    .start1 { border:thick solid #fcecec; background-color: #fff0f0; border-bottom-style: none; }
+    .start2 { border:thick solid #ecfcec; background-color: #f0fff0; border-bottom-style: none; }
+    .start3 { border:thick solid #ececfc; background-color: #f0f0ff; border-bottom-style: none; }
+
+    .extends.up999:before {
+        content: "⇩"; display: inline-block;
+    }
+    .extends.dn999:before {
+        content: "⇧"; display: inline-block;
+    }
+    .extends {
+        color: #333;
+        border: 1px solid #bbb;
+        font-family: sans-serif;
+        cursor: pointer;
+    }
+    .what {
+        background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIwIiBoZWlnaHQ9IjAiIGRpc3BsYXk9Im5vbmUiPgogICAgICA8c3ltYm9sIGlkPSJkb3duLWFycm93IiB2aWV3Qm94PSIwIC0xMCAxMDcgNjMiID4KICAgICAgICA8cGF0aCBkPSJNIDU0LDQwIDkwLDMgQyA5OSwtNSAxMTIsOCAxMDQsMTYgTCA2MCw2MCBjIDAsMCAtOCw2IC0xNCwwIEwgMywxNiBDIC01LDggOCwtNCAxNSwyIFoiIC8+CiAgICAgIDwvc3ltYm9sPgogICAgICA8dXNlIGlkPSJ1cC1hcnJvdyIgeGxpbms6aHJlZj0iI2Rvd24tYXJyb3ciIHRyYW5zZm9ybT0ic2NhbGUoMSwgLTEpIiB5PSItMTIwJSIgLz4KICAgICAgPCEtLSBpZD0idXAtYXJyb3ciIHhsaW5rOmhyZWY9IiNkb3duLWFycm93IiB0cmFuc2Zvcm09Im1hdHJpeCgxLDAsMCwtMSwwLDEzKSIgLS0+CiAgICA8L3N2Zz4=");
+    }
+    .comment {
+        margin-left: 1em;
+        /* border-left: thin solid green; */
+        margin-bottom: 2ex;
+    }
+    .render section, .render div {
+        /* border: thin dashed #ddf; */
+        padding: 0em;
+        margin: .5em;
+    }
+    .prefix    { color: #228b22; }
+    .localname { color: #008b8b; }
+    .native:hover, .native:focus {
+        color: #2a6496;
+        text-decoration: underline;
+    }
+
+    .native:focus {
+        outline: thin dotted;
+    }
+    .native {
+        color: #428bca;
+        text-decoration: none;
+    }
+    .shapeExpr { border: thin dotted #777; padding: 1em; }
+    .shapeExpr td:first-child { padding-left: 1em; }
+    .shapeExpr td:last-child { padding-right: 1em; }
+    .annotation .lines { transform: scale(1,2); pointer-events: none; }
+    .shapeExpr tr td:first-child { white-space: nowrap }
+    div.comment h4:first-child { margin-top: 0; }
+    h4 { margin-bottom: 0; }
+    h4:after { content: ":"; }
+
+  dl {
+    border: 3px double #ccc;
+    padding: 0.5em;
+    display: inline-block;
+    margin: 0;
+  }
+  dt {
+    float: left;
+    clear: left;
+    text-align: right;
+    font-weight: bold;
+    color: green;
+  }
+  dt::after {
+    content: ":";
+  }
+  dd {
+    padding: 0 0 0.5em 0;
+  }
+
+  .arrows     {
+                display: inline-block,
+                width: .9em,
+                margin-left: -.05em,
+                text-align: left;
+                margin-right: .2em;
+              }
+
+    </style>
+    <script src="https://www.w3.org/scripts/jquery/2.2.4/jquery.min.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script><script></script>
+    <script src="https://rawgit.com/ericprud/ShExHTML/master/shex-html.js"></script>
+<!--
+    <script src="jquery.min.js"></script>
+    <script src="../node_modules/marked/lib/marked.js"></script><script></script>
+    <script src="../node_modules/shex-html/shex-html.js"></script>
+ -->
+
+    <script src="obo.js"></script>
+  </head>
+  <body>
+    <h1>DDI4 Schema</h1>
+    <div id="schema"/>
+    <script src="dynamic-tree.js"></script>
+  </body>
+</html>
