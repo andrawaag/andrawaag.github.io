@@ -1,4 +1,4 @@
-ShExJtoAS(DDIschema)
+ShExJtoAS(obo)
 DDIschema.prefixes = {
  obo: 'http://purl.obolibrary.org/obo/',
  rdf: 'http://www.w3.org/1999/02/22-rdfsyntax-ns#',
@@ -10,7 +10,7 @@ DDIschema.prefixes = {
  dce: 'http://purl.org/dc/elements/1.1/'
 }
 $('#schema').append(
-  ShExHTML(window.$, marked.parse).asTree(DDIschema, 'http://patient.deltatissue.org/subject')
+  ShExHTML(window.$, marked.parse).asTree(obo, 'http://patient.deltatissue.org/subject')
 )
 
 function ShExJtoAS (schema) {
