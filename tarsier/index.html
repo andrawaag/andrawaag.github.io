@@ -565,11 +565,14 @@
 
     function updateResultsBar() {
       els.resultsBar.hidden = false;
+      var loaded = Math.min(state.offset, state.total);
+      var imgs = state.shown + ' image' + (state.shown === 1 ? "" : "s");
       els.resultsBar.innerHTML =
-        '<span>Showing ' + state.shown + ' image' + (state.shown === 1 ? "" : "s") +
-        ' from ' + Math.min(state.offset, state.total) + ' of ' + state.total + ' occurrences</span>' +
-        '<span><a href="https://gbif.org/occurrence/search?taxon_key=' + state.taxonKey +
-        '&media_type=StillImage">View on GBIF</a></span>';
+        '<span>Loaded ' + loaded.toLocaleString() + ' of ' + state.total.toLocaleString() +
+        ' matching occurrence' + (state.total === 1 ? "" : "s") + ' &middot; ' + imgs + ' shown' +
+        (loaded < state.total ? ' (use &ldquo;Load more&rdquo; for the rest)' : '') + '</span>' +
+        '<span><a href="https://www.gbif.org/occurrence/search?taxon_key=' + state.taxonKey +
+        '&media_type=StillImage" target="_blank" rel="noopener">View on GBIF</a></span>';
     }
 
     function renderAlternatives(alts) {
