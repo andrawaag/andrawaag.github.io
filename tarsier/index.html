@@ -29,6 +29,9 @@
     .summary .meta { color: var(--muted-color); font-size: 0.85rem; }
     .summary .total { margin-left: auto; color: var(--muted-color); font-size: 0.85rem; }
     .summary .note { margin: 0.6rem 0 0; font-size: 0.85rem; }
+    .summary .wd { margin: 0.5rem 0 0; font-size: 0.85rem; }
+    .summary .wd .ok { color: #27500a; }
+    .summary .wd .no { color: #854f0b; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
     .chip { font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid transparent; }
     .chip.cc0      { background: #e6f1fb; color: #0c447c; }
@@ -186,7 +189,7 @@
     var REUSABLE_FILTER = "&license=CC0_1_0&license=CC_BY_4_0";
 
     var state = { taxonKey: null, canonical: null, offset: 0, total: 0, shown: 0, busy: false,
-                  scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
+                  scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false, wdQid: null, wdHasImage: false, wdSuggested: false };
     var shownIds = {};      // media identifiers already on the page (dedupe across both passes)
     var datasetTitles = {}; // datasetKey -> human title, resolved once and reused
     var SCAN_PAGE = 100;    // records per request during the background top-up scan
@@ -242,7 +245,7 @@
 
     function resetView() {
       state = { taxonKey: null, canonical: null, offset: 0, total: 0, shown: 0, busy: false,
-                scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
+                scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false, wdQid: null, wdHasImage: false, wdSuggested: false };
       shownIds = {};
       els.summary.innerHTML = "";
       els.gallery.innerHTML = "";
@@ -411,7 +414,60 @@
           '</div>' +
           '<div class="chips">' + chips + '</div>' +
           (note ? '<p class="note">' + note + '</p>' : "") +
+          '<p class="wd" id="wdImage"></p>' +
         '</div>';
+      checkWikidataImage();
+    }
+
+    // Does this taxon's Wikidata item have an image (P18)? If not, suggest adding one.
+    function checkWikidataImage() {
+      var el = document.getElementById("wdImage");
+      if (!el || state.taxonKey == null) return;
+      var WD = "https://www.wikidata.org/w/api.php";
+      getJSON(WD + "?action=query&list=search&srnamespace=0&format=json&origin=*&srsearch=" +
+        encodeURIComponent("haswbstatement:P846=" + state.taxonKey))
+        .then(function (r) {
+          var s = (r.query && r.query.search) || [];
+          if (!s.length) return; // taxon not linked to its GBIF id on Wikidata
+          var qid = s[0].title;
+          return getJSON(WD + "?action=wbgetentities&props=claims&format=json&origin=*&ids=" + qid)
+            .then(function (r2) {
+              var claims = ((r2.entities || {})[qid] || {}).claims || {};
+              renderWdImage(qid, !!(claims.P18 && claims.P18.length));
+            });
+        })
+        .catch(function () { /* silent: this is an optional enhancement */ });
+    }
+
+    function renderWdImage(qid, hasImage) {
+      state.wdQid = qid;
+      state.wdHasImage = hasImage;
+      var el = document.getElementById("wdImage");
+      if (!el) return;
+      var item = "https://www.wikidata.org/wiki/" + qid;
+      if (hasImage) {
+        el.innerHTML = '<span class="ok">&#10003; Wikidata (<a href="' + item +
+          '" target="_blank" rel="noopener">' + qid + '</a>) already has an image.</span>';
+      } else {
+        el.innerHTML = '<span class="no">&#9888; <a href="' + item + '" target="_blank" rel="noopener">' + qid +
+          '</a> has no image on Wikidata.</span> Found a reusable one here? ' +
+          '<a href="' + item + '#P18" target="_blank" rel="noopener">Add it as the taxon&rsquo;s image &#8599;</a>' +
+          '<span id="wdQuick"></span>';
+      }
+    }
+
+    // When an image of this taxon is already on Commons and the Wikidata item has no image,
+    // offer a one-click QuickStatements link to set P18 to that exact file.
+    function offerWikidataImage(commonsTitle) {
+      if (!state.wdQid || state.wdHasImage || state.wdSuggested || !commonsTitle) return;
+      var slot = document.getElementById("wdQuick");
+      if (!slot) return;
+      state.wdSuggested = true;
+      var file = commonsTitle.replace(/^File:/, "");
+      var qs = "https://quickstatements.toolforge.org/#/v1=" +
+        encodeURIComponent(state.wdQid + "\tP18\t\"" + file + "\"");
+      slot.innerHTML = '<br>&#9889; Already on Commons: <a href="' + qs + '" target="_blank" rel="noopener">' +
+        'one-click set <em>' + esc(file) + '</em> as the Wikidata image &#8599;</a>';
     }
 
     function loadPage(first) {
@@ -537,6 +593,7 @@
             up.rel = "noopener";
             up.textContent = "View on Commons";
           }
+          offerWikidataImage(res.title);
         });
       });
     }, { rootMargin: "200px" }) : null;
