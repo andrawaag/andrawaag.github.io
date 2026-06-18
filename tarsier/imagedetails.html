@@ -227,7 +227,12 @@
         "{{Gbif|" + gbifID + "}}\n" +
         "[[Category:Reuse images with Tarsier]]\n";
 
-      var destFile = (sciName + " " + gbifID + ext).replace(/[\[\]{}|#<>]/g, "");
+      // A GBIF occurrence can carry several images; numbering keeps their Commons filenames
+      // distinct (the first keeps the clean base name, the rest get " (2)", " (3)", ...).
+      var imgs = (occ.media || []).filter(function (m) { return m && m.identifier; });
+      var idx = (occ.media || []).indexOf(media);
+      var nth = (imgs.length > 1 && idx > 0) ? " (" + (idx + 1) + ")" : "";
+      var destFile = (sciName + " " + gbifID + nth + ext).replace(/[\[\]{}|#<>]/g, "");
 
       return "https://commons.wikimedia.org/wiki/Special:Upload" +
         "?wpUploadDescription=" + encodeURIComponent(desc) +
