@@ -1,0 +1,52 @@
+name: Mirror Tarsier to Codeberg Pages
+
+# Publishes the tarsier/ app to a Codeberg repository's `pages` branch, so it is
+# also served at https://andrawaag.codeberg.page/tarsier/ as a mirror of the
+# GitHub Pages site.
+#
+# One-time setup required:
+#   1. On Codeberg, create a PUBLIC repository named `tarsier` (empty).
+#   2. Generate an SSH keypair for deployment:
+#        ssh-keygen -t ed25519 -f codeberg_deploy -C "github-actions mirror" -N ""
+#      Add codeberg_deploy.pub as a write-enabled Deploy Key on the Codeberg repo
+#      (Settings -> Deploy Keys -> Add, tick "Enable Write Access").
+#   3. In this GitHub repo, add a secret CODEBERG_SSH_KEY = the PRIVATE key
+#      (contents of codeberg_deploy).
+# After that, every push that touches tarsier/ re-publishes the mirror.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tarsier/**'
+      - '.github/workflows/mirror-to-codeberg.yml'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish tarsier/ to Codeberg pages branch
+        env:
+          CODEBERG_SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CODEBERG_SSH_KEY:-}" ]; then
+            echo "CODEBERG_SSH_KEY secret is not set — skipping mirror." >&2
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CODEBERG_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H codeberg.org >> ~/.ssh/known_hosts 2>/dev/null
+
+          cd tarsier
+          git init -q -b pages
+          git config user.name  "Codeberg Mirror Bot"
+          git config user.email "noreply@waagmeester.net"
+          git add -A
+          git commit -q -m "Mirror from andrawaag.github.io@${GITHUB_SHA::7}"
+          git push -f git@codeberg.org:andrawaag/tarsier.git pages
+          echo "Published to https://andrawaag.codeberg.page/tarsier/"
