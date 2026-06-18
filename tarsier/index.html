@@ -37,6 +37,9 @@
     .chip.excluded { background: #f1efe8; color: #5f5e5a; }
 
     .results-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; color: var(--muted-color); font-size: 0.85rem; margin: 0.5rem 0; }
+    .jumpbar { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.75rem; }
+    .jumpbar a { font-size: 0.8rem; padding: 0.25rem 0.7rem; border-radius: 6px; text-decoration: none; background: #e1f5ee; color: #0f6e56; border: 1px solid #9fe1cb; }
+    .jumpbar a:hover { background: #cdeee2; }
 
     .grid-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.85rem; }
     .card { border: 1px solid var(--card-border-color, #e0e0e0); border-radius: 10px; overflow: hidden; background: var(--card-background-color, #fff); display: flex; flex-direction: column; }
@@ -106,6 +109,7 @@
       </label>
     </div>
     <div id="resultsBar" class="results-bar" hidden></div>
+    <div id="jumpbar" class="jumpbar" hidden></div>
     <div id="gallery" class="grid-gallery"></div>
     <div id="loadmore" class="loadmore" hidden><button id="loadmoreBtn" type="button">Load more</button></div>
 
@@ -168,6 +172,7 @@
       litfigs: document.getElementById("litfigs"),
       litNote: document.getElementById("litNote"),
       litGrid: document.getElementById("litGrid"),
+      jumpbar: document.getElementById("jumpbar"),
       alts: document.getElementById("alts")
     };
     var ZENODO = "https://zenodo.org/api/records";
@@ -240,6 +245,8 @@
       els.gallery.innerHTML = "";
       els.litfigs.hidden = true;
       els.litGrid.innerHTML = "";
+      els.jumpbar.hidden = true;
+      els.jumpbar.innerHTML = "";
       resetExtra();
       els.alts.innerHTML = "";
       els.alts.hidden = true;
@@ -255,6 +262,7 @@
       els.extra.hidden = true;
       els.scanStatus.hidden = true;
       els.scanMoreBtn.hidden = true;
+      if (els.jumpbar) updateJumpbar();
     }
 
     // Re-run just the gallery (keep the matched taxon) after the filter toggle changes.
@@ -559,6 +567,7 @@
         els.extra.hidden = false;
         resolveDatasetTitles();
         observeCards(els.extraGrid);
+        updateJumpbar();
       }
     }
 
@@ -598,6 +607,20 @@
       step();
     }
 
+    // Pointers near the top so users don't have to scroll to discover the lower sections.
+    function updateJumpbar() {
+      var chips = "";
+      if (state.extraCount > 0)
+        chips += '<a href="#extra" data-jump="extra">&darr; ' + state.extraCount +
+          ' more open at image level</a>';
+      var lit = els.litGrid.childElementCount;
+      if (lit > 0)
+        chips += '<a href="#litfigs" data-jump="litfigs">&darr; ' + lit +
+          ' literature figure' + (lit === 1 ? "" : "s") + ' (Plazi / BLR)</a>';
+      els.jumpbar.innerHTML = chips;
+      els.jumpbar.hidden = !chips;
+    }
+
     function updateScanNote(done) {
       els.scanStatus.hidden = false;
       var msg = "Image-level scan: checked " + state.scannedRecords + " record" + (state.scannedRecords === 1 ? "" : "s");
@@ -627,6 +650,7 @@
             if (c) { frag.appendChild(c.el); if (c.reusable) reusable++; }
           });
           els.litGrid.appendChild(frag);
+          updateJumpbar();
           els.litNote.innerHTML = hits.length + " figure" + (hits.length === 1 ? "" : "s") +
             " from taxonomic literature &middot; " + reusable + " openly licensed &middot; " +
             "hosted on Zenodo (Commons-allow-listed). Licenses are often unstated on Zenodo &mdash; verify at the source.";
@@ -748,7 +772,14 @@
     els.showAll.addEventListener("change", reloadGallery);
     els.litToggle.addEventListener("change", function () {
       if (els.litToggle.checked) loadLitFigs();
-      else { els.litfigs.hidden = true; els.litGrid.innerHTML = ""; }
+      else { els.litfigs.hidden = true; els.litGrid.innerHTML = ""; updateJumpbar(); }
+    });
+    els.jumpbar.addEventListener("click", function (e) {
+      var a = e.target.closest("a[data-jump]");
+      if (!a) return;
+      e.preventDefault();
+      var t = document.getElementById(a.getAttribute("data-jump"));
+      if (t) t.scrollIntoView({ block: "start" });
     });
     els.alts.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-name]");
