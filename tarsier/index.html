@@ -99,6 +99,7 @@
       <a href="https://commons.wikimedia.org">Wikimedia Commons</a>, and where the license is compatible links straight to a
       pre-filled Commons upload (a Wikimedia account is required).
       Search by scientific name, or by a common name &mdash; common names are resolved to a taxon via <a href="https://www.wikidata.org">Wikidata</a>.
+      You can also deep-link a search with <code>?name=</code> (e.g. <code>?name=Euphorbia neriifolia</code>) or a Wikidata <code>?qid=</code> (e.g. <code>?qid=Q2161999</code>).
       Issues and pull requests are welcome on <a href="https://github.com/andrawaag/andrawaag.github.io/issues">GitHub</a>.</p>
     </section>
 
@@ -849,9 +850,32 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    // Allow deep-linking: index.html?name=Euphorbia%20neriifolia
-    var initial = new URLSearchParams(location.search).get("name");
-    if (initial) { els.name.value = initial; search(initial); }
+    // Resolve a Wikidata QID to its taxon name (P225) and search for it.
+    function searchByQid(qid) {
+      els.intro.hidden = true;
+      showStatus('<img src="' + LOGO + '" alt=""><p>Resolving <a href="https://www.wikidata.org/wiki/' +
+        esc(qid) + '" target="_blank" rel="noopener">' + esc(qid) + '</a> on Wikidata&hellip;</p>');
+      getJSON("https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims|labels&languages=en" +
+        "&format=json&origin=*&ids=" + encodeURIComponent(qid))
+        .then(function (d) {
+          var e = (d.entities || {})[qid] || {};
+          var p225 = e.claims && e.claims.P225 && e.claims.P225[0];
+          var name = p225 && p225.mainsnak.datavalue && p225.mainsnak.datavalue.value;
+          if (!name) {
+            showStatus('<p>' + esc(qid) + ' has no taxon name (P225) on Wikidata &mdash; is it a taxon?</p>');
+            return;
+          }
+          els.name.value = name;
+          search(name);
+        })
+        .catch(function () { showStatus('<p>Could not resolve ' + esc(qid) + ' on Wikidata.</p>'); });
+    }
+
+    // Allow deep-linking: index.html?name=Euphorbia%20neriifolia  or  index.html?qid=Q2161999
+    var qp = new URLSearchParams(location.search);
+    var initialName = qp.get("name"), initialQid = qp.get("qid");
+    if (initialName) { els.name.value = initialName; search(initialName); }
+    else if (initialQid && /^Q\d+$/i.test(initialQid)) { searchByQid(initialQid); }
   })();
   </script>
 </body>
