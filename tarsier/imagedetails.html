@@ -19,8 +19,11 @@
     a.upload-btn { display: inline-block; margin-top: 1rem; }
     table.meta code { background: rgba(0,0,0,0.06); padding: 0.05rem 0.3rem; border-radius: 4px; }
     .assumed-note { color: var(--muted-color); display: inline-block; margin-top: 0.25rem; line-height: 1.4; }
+    .dom-status .ok { color: #27500a; }
+    .dom-status .no { color: #854f0b; }
     .notice { padding: 2rem 1rem; text-align: center; color: var(--muted-color); }
   </style>
+  <script src="js/commons-domains.js"></script>
 </head>
 <body>
   <main class="container">
@@ -114,8 +117,8 @@
           (occ.recordedBy ? row("Recorded by", esc(occ.recordedBy)) : "") +
           (occ.eventDate ? row("Date", esc(occ.eventDate)) : "") +
           row("Source", '<a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">view source page &#8599;</a>') +
-          (sourceHost ? row("Source host", '<code>' + esc(sourceHost) + '</code> &middot; ' +
-            '<a href="approved-domains.html?domain=' + encodeURIComponent(sourceHost) + '" target="_blank" rel="noopener">is it approved?</a>') : "") +
+          (sourceHost ? row("Source host", '<code>' + esc(sourceHost) + '</code> ' +
+            '<span class="dom-status" id="domStatus"></span>') : "") +
         '</table>';
 
       var action;
@@ -126,7 +129,7 @@
           '<p><small>Opens a pre-filled Commons upload form. Upload-by-URL only works from ' +
           '<a href="approved-domains.html" target="_blank" rel="noopener">approved source domains</a>' +
           (sourceHost ? ' (this image&rsquo;s host is <code>' + esc(sourceHost) + '</code>)' : '') +
-          '; a Wikimedia account is required.</small></p>';
+          '; a Wikimedia account is required.</small><span id="uploadDomWarn"></span></p>';
       } else {
         action = '<p><small>This image&rsquo;s license (' + esc(effective || "unspecified") +
           ') is not compatible with Wikimedia Commons.</small></p>';
@@ -138,6 +141,32 @@
             '" onerror="this.onerror=null;this.src=\'images/tarsier-01.png\';"></div>' +
           '<div><h2 style="font-style:italic;margin-top:0;">' + esc(sciName) + '</h2>' + meta + action + '</div>' +
         '</div>';
+
+      if (sourceHost) checkDomainStatus(sourceHost, sourcePage);
+    }
+
+    // Tell the user, live, whether this image's host is on the Commons copy-upload allow-list,
+    // and offer the proposal flow when it isn't.
+    function checkDomainStatus(host, sourcePage) {
+      var el = document.getElementById("domStatus");
+      var warn = document.getElementById("uploadDomWarn");
+      if (!el || !window.CommonsDomains) return;
+      el.innerHTML = "&middot; checking allow-list&hellip;";
+      var proposeHref = "approved-domains.html?domain=" + encodeURIComponent(host) +
+        "&source=" + encodeURIComponent(sourcePage);
+      CommonsDomains.check(host).then(function (res) {
+        if (res.error) {
+          el.innerHTML = '&middot; <a href="' + proposeHref + '" target="_blank" rel="noopener">check approval</a>';
+        } else if (res.match) {
+          el.innerHTML = '&middot; <span class="ok">&#10003; on the Commons allow-list</span>';
+        } else {
+          el.innerHTML = '&middot; <span class="no">&#9888; not on the allow-list</span> &mdash; ' +
+            '<a href="' + proposeHref + '" target="_blank" rel="noopener">propose it</a>';
+          if (warn) warn.innerHTML = '<br><span class="no">&#9888; This image&rsquo;s host is not on the ' +
+            'allow-list, so the upload will be rejected until it is added. ' +
+            '<a href="' + proposeHref + '" target="_blank" rel="noopener">Propose the domain &#8599;</a></span>';
+        }
+      });
     }
 
     function row(k, v) { return '<tr><td class="k">' + k + '</td><td>' + v + '</td></tr>'; }
