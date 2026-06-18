@@ -129,12 +129,12 @@
       var action;
       if (wm) {
         action =
-          '<a class="upload-btn" role="button" href="' + esc(buildCommonsUrl(institution, wm, ext, sciName)) +
+          '<a class="upload-btn" role="button" href="' + esc(buildCommonsUrl(institution, wm, ext, sciName, "")) +
           '" target="_blank" rel="noopener">Upload to Wikimedia Commons</a>' +
           '<p><small>Opens a pre-filled Commons upload form. Upload-by-URL only works from ' +
           '<a href="approved-domains.html" target="_blank" rel="noopener">approved source domains</a>' +
           (sourceHost ? ' (this image&rsquo;s host is <code>' + esc(sourceHost) + '</code>)' : '') +
-          '; a Wikimedia account is required.</small><span id="uploadDomWarn"></span></p>';
+          '; a Wikimedia account is required.</small><span id="uploadDomWarn"></span><span id="wdLink"></span></p>';
       } else {
         action = '<p><small>This image&rsquo;s license (' + esc(effective || "unspecified") +
           ') is not compatible with Wikimedia Commons.</small></p>';
@@ -150,6 +150,28 @@
 
       if (sourceHost) checkDomainStatus(sourceHost, sourcePage);
       checkCommonsDup(media.identifier);
+      if (wm) addWikidataRef(institution, wm, ext, sciName);
+    }
+
+    // Resolve the taxon's Wikidata item from its GBIF id (P846) and, if found, stamp it into the
+    // Commons file description ([[:d:Q…]]) and show a link. Async, so it updates after first paint.
+    function addWikidataRef(institution, wm, ext, sciName) {
+      var key = occ.acceptedTaxonKey || occ.speciesKey || occ.taxonKey;
+      if (!key) return;
+      fetch("https://www.wikidata.org/w/api.php?action=query&list=search&srnamespace=0&format=json" +
+        "&origin=*&srsearch=" + encodeURIComponent("haswbstatement:P846=" + key))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var s = d && d.query && d.query.search;
+          if (!s || !s.length) return;
+          var qid = s[0].title;
+          var btn = document.querySelector("a.upload-btn");
+          if (btn && btn.getAttribute("href")) btn.href = buildCommonsUrl(institution, wm, ext, sciName, qid);
+          var link = document.getElementById("wdLink");
+          if (link) link.innerHTML = '<br>Wikidata: <a href="https://www.wikidata.org/wiki/' + qid +
+            '" target="_blank" rel="noopener">' + qid + '</a> &mdash; linked in the upload description.';
+        })
+        .catch(function () {});
     }
 
     // Tell the user if this exact image is already on Commons, so they don't upload a duplicate.
@@ -203,8 +225,9 @@
 
     function row(k, v) { return '<tr><td class="k">' + k + '</td><td>' + v + '</td></tr>'; }
 
-    function buildCommonsUrl(institution, wm, ext, sciName) {
+    function buildCommonsUrl(institution, wm, ext, sciName, qid) {
       var gbifID = occ.gbifID || occ.key;
+      var wdRef = qid ? " ([[:d:" + qid + "]])" : "";
       var author = INSTITUTE_TEMPLATE[institution] || institution;
       if (!INSTITUTE_TEMPLATE[institution]) {
         var extra = [];
@@ -218,7 +241,7 @@
 
       var desc =
         "{{Information\n" +
-        "|description={{en|" + sciName + " " + gbifID + "}}\n" +
+        "|description={{en|" + sciName + " " + gbifID + wdRef + "}}\n" +
         "|date=" + (occ.eventDate || "") + "\n" +
         "|source=https://www.gbif.org/occurrence/" + gbifID + "\n" +
         "|author=" + author + "\n" +
