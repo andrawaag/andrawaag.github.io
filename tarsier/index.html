@@ -202,9 +202,19 @@
       });
     }
 
-    function getJSON(url) {
+    // GET JSON with automatic retry/backoff on rate-limiting (429) and transient 503s, so a
+    // burst of GBIF calls in one search rides out a throttle instead of failing.
+    function getJSON(url, attempt) {
+      attempt = attempt || 0;
       return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) {
-        if (!r.ok) throw new Error("GBIF returned HTTP " + r.status);
+        if ((r.status === 429 || r.status === 503) && attempt < 4) {
+          var ra = parseInt(r.headers.get("Retry-After"), 10);
+          var wait = (ra > 0 ? ra * 1000 : 600 * Math.pow(2, attempt)); // ~0.6s, 1.2s, 2.4s, 4.8s
+          return new Promise(function (res) { setTimeout(res, wait); })
+            .then(function () { return getJSON(url, attempt + 1); });
+        }
+        if (r.status === 429) throw new Error("rate-limited (HTTP 429) — please retry in a moment");
+        if (!r.ok) throw new Error("the data service returned HTTP " + r.status);
         return r.json();
       });
     }
