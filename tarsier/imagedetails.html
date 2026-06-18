@@ -1,133 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-	<meta content="utf-8" http-equiv="encoding">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="css/pico.min.css">
-	<title>Tarsier GBIF image search</title>
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-	<link rel="shortcut icon" href="/favicon.ico">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/pico.min.css">
+  <link rel="shortcut icon" href="favicon.png">
+  <title>Tarsier — image details</title>
+  <style>
+    .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+    .hero img.logo { width: 90px; height: auto; }
+    .hero h1 { margin: 0; font-size: 1.3rem; }
+    .detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+    @media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
+    .detail img.preview { width: 100%; height: auto; border-radius: 8px; background: #f3f1ea; }
+    table.meta { width: 100%; table-layout: fixed; }
+    table.meta td { padding: 0.3rem 0.5rem; vertical-align: top; font-size: 0.9rem; word-break: break-word; }
+    table.meta td.k { color: var(--muted-color); white-space: nowrap; width: 9rem; }
+    a.upload-btn { display: inline-block; margin-top: 1rem; }
+    a.upload-btn.disabled { opacity: 0.5; pointer-events: none; }
+    table.meta code { background: rgba(0,0,0,0.06); padding: 0.05rem 0.3rem; border-radius: 4px; }
+    .assumed-note { color: var(--muted-color); display: inline-block; margin-top: 0.25rem; line-height: 1.4; }
+    .dom-status .ok { color: #27500a; }
+    .dom-status .no { color: #854f0b; }
+    .dup { background: #e1f5ee; border: 1px solid #5dcaa5; color: #0f6e56; border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.88rem; line-height: 1.45; margin: 0 0 1rem; }
+    .dup a { color: #0f6e56; font-weight: 500; }
+    .notice { padding: 2rem 1rem; text-align: center; color: var(--muted-color); }
+  </style>
+  <script src="js/commons-domains.js"></script>
+  <script src="js/commons-dup.js"></script>
 </head>
-
-
 <body>
-	<body>
-		<div class="hero">
-			<nav class="container-fluid">
-				<ul><li><a href="index.html"><img src = "images/tarsier-01.png" width = 250></a></li>
-					<li><h3>Tarsier GBIF image search</h3>Tarsier is a wrapper around the GBIF api to find reusable images of taxa</li>
-				</ul>
-			</nav>
-			<div class="mypanel"></div>
-			<script>
-				$.ajaxSetup({
-					async: false
-				});
+  <main class="container">
+    <header class="hero">
+      <a href="index.html"><img class="logo" src="images/tarsier-01.png" alt="Tarsier logo"></a>
+      <div><h1>Tarsier — image details</h1></div>
+    </header>
+    <div id="panel"></div>
+  </main>
+  <footer class="container">
+    <hr>
+    <small>Made by Andra Waagmeester for the Wikiproject Biodiversity.</small>
+  </footer>
 
-				const urlSearchParams = new URLSearchParams(window.location.search);
-				const params = Object.fromEntries(urlSearchParams.entries());
-				var retrievedObject = JSON.parse(localStorage.getItem('occuranceData_'+params.occurenceId));
-				console.log(localStorage)
-				text = "<center><h3>"+retrievedObject.acceptedScientificName+"</h3></center><table>";
+  <script>
+  (function () {
+    "use strict";
+    var API = "https://api.gbif.org/v1";
+    var panel = document.getElementById("panel");
+    var params = Object.fromEntries(new URLSearchParams(location.search).entries());
 
-				text += "<table><tr><td><img src = '"+params.mediaId+"' width=500/></td><td><table>"
-				text += "<tr><td>GBIF ID "+retrievedObject.gbifID+"</td></tr>"
-				var gbifID = retrievedObject.gbifID
-				text += "<tr><td>license "+retrievedObject.license+"</td></tr>"
-				text += "<tr><td>acceptedScientificName "+retrievedObject.acceptedScientificName+"</td></tr>"
-				text += "<tr><td>publisherOrg	 "+retrievedObject.hostingOrganization.title +"</td></tr>"
-	// code to deal with license representations
-	retrievedObject.wmclicense = 'ambiguous';
-	
-	source = "" 
-	title =encodeURIComponent(retrievedObject.acceptedScientificName+" "+gbifID)
-	var instituteTemplate = ""
-	$.each(retrievedObject.media, function() {
-		$.ajaxSetup({
-			async: false
-		});
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
 
-		// Licenses
-		switch (this.license) {
-			//CC-BY
-			case "http://creativecommons.org/licenses/by/4.0/legalcode":
-			case "http://creativecommons.org/licenses/by/4.0/":
-			case "https://creativecommons.org/licenses/by/4.0/deed.en":
-			retrievedObject.wmclicense = "cc-by-4.0"
-			break ;
-			//CC0
-			case "http://creativecommons.org/publicdomain/zero/1.0/legalcode":
-			retrievedObject.wmclicense = "Cc-zero"
-			break ;
-			case "http://creativecommons.org/publicdomain/zero/1.0/":
-			retrievedObject.wmclicense = "Cc-zero"
-			break ;
-			//CC-BY-SA
-			case "http://creativecommons.org/licenses/by-sa/4.0/":
-			retrievedObject.wmclicense = "cc-by-sa-4.0"
-			break ;
+    var occ = null;
+    try { occ = JSON.parse(localStorage.getItem("occuranceData_" + params.occurenceId)); } catch (e) {}
 
-		} 
-		// Institutes
-		
-		switch (retrievedObject.hostingOrganization.title) {
-			case "Naturalis Biodiversity Center":
-			instituteTemplate = "{{Institution:Naturalis}}"
-			break;
-			case "Natural History Museum":
-			instituteTemplate = "{{Institution:Natural History Museum, London}}"
-			break;
-			case "MNHN - Museum national d'Histoire naturelle":
-			instituteTemplate = "{{Institution:Muséum national d'histoire naturelle}}"
-			break;
-		}
+    if (!occ || !params.mediaId) {
+      panel.innerHTML = '<div class="notice"><p>This image is no longer in your browser\'s cache ' +
+        '(it is stored only after you open it from a search). ' +
+        'Please <a href="index.html">run the search again</a> and reopen the image.</p></div>';
+      return;
+    }
 
-		if (this.identifier == params["mediaId"])
-			text += "<tr><td>image source:</td><td>"+this.identifier+"</td></tr>"
-		text += "<tr><td>License:</td><td>"+this.license+"</td></tr>"
-		source = this.references
-				    //formats
-				    switch (this.format) {
-				    	case 'image/jpeg':
-				    	extension = ".jpg"
-				    	break;
+    // Map a free-text media license to the Wikimedia Commons license template name.
+    function wmLicense(raw) {
+      var s = String(raw || "").toLowerCase();
+      if (s.indexOf("zero") > -1 || s.indexOf("cc0") > -1 || s.indexOf("cc-zero") > -1) return "Cc-zero";
+      if (s.indexOf("by-nc") > -1 || s.indexOf("by-nd") > -1) return null;
+      if (s.indexOf("by-sa") > -1) return "cc-by-sa-4.0";
+      if (s.indexOf("licenses/by/") > -1 || /\bcc[ -]?by\b/.test(s)) return "cc-by-4.0";
+      return null;
+    }
 
-				    }
-				    //title = this.
-				});
-	text += "<tr><td>occurrenceID: "+retrievedObject.occurrenceID+"</td></tr></table></td></tr></table>"
-	
-	
-	text += "</table>"
+    var EXT = {
+      "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
+      "image/gif": ".gif", "image/tiff": ".tif", "image/webp": ".webp"
+    };
 
-	url = "https://commons.wikimedia.org/wiki/Special:Upload?wpUploadDescription=%7B%7BInformation%0A%7Cdescription%3D%7B%7Ben%7C"+title+"%7D%7D%0A%7Cdate%3D"+retrievedObject.eventDate+"%0A%7Csource%3Dhttps://www.gbif.org/occurrence/"+retrievedObject.gbifID+"%0A"
-	if (instituteTemplate != ""){
-		url += "%7Cauthor%3D"+instituteTemplate.replace("'", "%27").replace("&", "%26")
-	} else {
+    var INSTITUTE_TEMPLATE = {
+      "Naturalis Biodiversity Center": "{{Institution:Naturalis}}",
+      "Natural History Museum": "{{Institution:Natural History Museum, London}}",
+      "MNHN - Museum national d'Histoire naturelle": "{{Institution:Muséum national d'histoire naturelle}}"
+    };
 
+    // Find the media entry the user clicked (fall back to the first one).
+    var media = (occ.media || []).filter(function (m) { return m.identifier === params.mediaId; })[0] ||
+                (occ.media || [])[0] || {};
 
-	//author
-	url +="%7Cauthor%3D"+retrievedObject.hostingOrganization.title.replace("'", "%27") 
-	if (retrievedObject.rightsHolder !== undefined)
-		if (retrievedObject.rightsHolder !== retrievedObject.hostingOrganization.title)
-			url += encodeURIComponent(" ("+retrievedObject.rightsHolder.replace("'", "%27").replace(/\|/g, ", ") +")")
-		if (retrievedObject.recordedBy !== undefined)
-			url += encodeURIComponent(" ("+retrievedObject.recordedBy.replace("'", "%27").replace(/\|/g, ", ") +")")
-	}
+    function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return ""; } }
 
-	url+="%0A%7Cpermission%3D%0A%7Cother%20versions%3D%0A%7D%7D%0A%0A%5B%5BCategory%3A"+encodeURIComponent(retrievedObject[retrievedObject["taxonRank"].toLowerCase()])+"%5D%5D%0A"
-	if (retrievedObject.decimalLatitude !== undefined)
-		url += encodeURIComponent("{{location|"+retrievedObject.decimalLatitude+"|"+retrievedObject.decimalLongitude+"}}")
+    function render(orgTitle) {
+      var institution = orgTitle || occ.datasetName || occ.institutionCode || "Unknown source";
+      // The image's own license is authoritative; if GBIF has none on the image, fall back to
+      // the record license and say so. (Historically GBIF couldn't filter by image license at all,
+      // so the record license was the only signal available at search time.)
+      var imageLicense = media.license || "";
+      var assumed = !imageLicense && !!occ.license;
+      var effective = imageLicense || occ.license || "";
+      var wm = wmLicense(effective);
+      var ext = EXT[(media.format || "").toLowerCase()] || "";
+      var sciName = occ.acceptedScientificName || occ.scientificName || "Unknown taxon";
+      var sourcePage = media.references || ("https://www.gbif.org/occurrence/" + encodeURIComponent(occ.gbifID || occ.key));
+      var sourceHost = hostOf(media.identifier);
 
-	url += encodeURIComponent("{{Gbif|"+retrievedObject.gbifID+"}}")
-	url += encodeURIComponent("{{Category:Reuse images with Tarsier}}")
-	url+="&wpLicense="+retrievedObject.wmclicense+"&wpDestFile="+retrievedObject.acceptedScientificName+" "+retrievedObject.gbifID+extension+"&wpSourceType=url&wpUploadFileURL="+params.mediaId
+      var licenseCell = esc(effective || "—") + (assumed
+        ? '<br><small class="assumed-note">GBIF lists no license on this individual image, so Tarsier assumes the ' +
+          'record-level license above applies. That is usually right but not guaranteed &mdash; ' +
+          '<a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">check the source &#8599;</a> if unsure.</small>'
+        : "");
 
-	text += "<a href = '"+url+"' target='_new'>upload2commons</a><br><br>"
-	console.log(params)
-	console.log(retrievedObject)
-	$(".mypanel").html(text);
-</script>
+      var meta =
+        '<table class="meta">' +
+          row("Scientific name", esc(sciName)) +
+          row("GBIF occurrence", '<a href="https://www.gbif.org/occurrence/' + encodeURIComponent(occ.gbifID || occ.key) + '">' + esc(occ.gbifID || occ.key) + '</a>') +
+          row(assumed ? "License (from record)" : "License (image)", licenseCell) +
+          row("Institution", esc(institution)) +
+          (occ.recordedBy ? row("Recorded by", esc(occ.recordedBy)) : "") +
+          (occ.eventDate ? row("Date", esc(occ.eventDate)) : "") +
+          row("Source", '<a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">view source page &#8599;</a>') +
+          (sourceHost ? row("Source host", '<code>' + esc(sourceHost) + '</code> ' +
+            '<span class="dom-status" id="domStatus"></span>') : "") +
+        '</table>';
 
-<hr>
+      var action;
+      if (wm) {
+        action =
+          '<a class="upload-btn" role="button" href="' + esc(buildCommonsUrl(institution, wm, ext, sciName)) +
+          '" target="_blank" rel="noopener">Upload to Wikimedia Commons</a>' +
+          '<p><small>Opens a pre-filled Commons upload form. Upload-by-URL only works from ' +
+          '<a href="approved-domains.html" target="_blank" rel="noopener">approved source domains</a>' +
+          (sourceHost ? ' (this image&rsquo;s host is <code>' + esc(sourceHost) + '</code>)' : '') +
+          '; a Wikimedia account is required.</small><span id="uploadDomWarn"></span></p>';
+      } else {
+        action = '<p><small>This image&rsquo;s license (' + esc(effective || "unspecified") +
+          ') is not compatible with Wikimedia Commons.</small></p>';
+      }
+
+      panel.innerHTML =
+        '<div class="detail">' +
+          '<div><img class="preview" src="' + esc(media.identifier) + '" alt="' + esc(sciName) +
+            '" onerror="this.onerror=null;this.src=\'images/tarsier-01.png\';"></div>' +
+          '<div><h2 style="font-style:italic;margin-top:0;">' + esc(sciName) + '</h2>' +
+            '<div id="dupBanner"></div>' + meta + action + '</div>' +
+        '</div>';
+
+      if (sourceHost) checkDomainStatus(sourceHost, sourcePage);
+      checkCommonsDup(media.identifier);
+    }
+
+    // Tell the user if this exact image is already on Commons, so they don't upload a duplicate.
+    // Single image here, so the SHA-1 fallback (byte-exact match) is worth the download.
+    function checkCommonsDup(imgUrl) {
+      var el = document.getElementById("dupBanner");
+      if (!el || !window.CommonsDup || !imgUrl) return;
+      CommonsDup.check(imgUrl, { sha1: true }).then(function (res) {
+        if (!res.onCommons) return;
+        el.innerHTML = '<div class="dup">&#10003; Already on Wikimedia Commons: ' +
+          '<a href="' + CommonsDup.fileUrl(res.title) + '" target="_blank" rel="noopener">' +
+          esc(res.title.replace(/^File:/, "")) + '</a> &mdash; ' +
+          (res.via === "sha1" ? "exact same file" : "matched by its source link") +
+          '. Uploading again would create a duplicate.</div>';
+        // Already on Commons: disable the upload action and point the user to the existing file.
+        var btn = document.querySelector("a.upload-btn");
+        if (btn) {
+          btn.classList.add("disabled");
+          btn.setAttribute("aria-disabled", "true");
+          btn.removeAttribute("href");
+          btn.textContent = "Already on Wikimedia Commons";
+        }
+        var warn = document.getElementById("uploadDomWarn");
+        if (warn) warn.innerHTML = "";
+      });
+    }
+
+    // Tell the user, live, whether this image's host is on the Commons copy-upload allow-list,
+    // and offer the proposal flow when it isn't.
+    function checkDomainStatus(host, sourcePage) {
+      var el = document.getElementById("domStatus");
+      var warn = document.getElementById("uploadDomWarn");
+      if (!el || !window.CommonsDomains) return;
+      el.innerHTML = "&middot; checking allow-list&hellip;";
+      var proposeHref = "approved-domains.html?domain=" + encodeURIComponent(host) +
+        "&source=" + encodeURIComponent(sourcePage);
+      CommonsDomains.check(host).then(function (res) {
+        if (res.error) {
+          el.innerHTML = '&middot; <a href="' + proposeHref + '" target="_blank" rel="noopener">check approval</a>';
+        } else if (res.match) {
+          el.innerHTML = '&middot; <span class="ok">&#10003; on the Commons allow-list</span>';
+        } else {
+          el.innerHTML = '&middot; <span class="no">&#9888; not on the allow-list</span> &mdash; ' +
+            '<a href="' + proposeHref + '" target="_blank" rel="noopener">propose it</a>';
+          if (warn) warn.innerHTML = '<br><span class="no">&#9888; This image&rsquo;s host is not on the ' +
+            'allow-list, so the upload will be rejected until it is added. ' +
+            '<a href="' + proposeHref + '" target="_blank" rel="noopener">Propose the domain &#8599;</a></span>';
+        }
+      });
+    }
+
+    function row(k, v) { return '<tr><td class="k">' + k + '</td><td>' + v + '</td></tr>'; }
+
+    function buildCommonsUrl(institution, wm, ext, sciName) {
+      var gbifID = occ.gbifID || occ.key;
+      var author = INSTITUTE_TEMPLATE[institution] || institution;
+      if (!INSTITUTE_TEMPLATE[institution]) {
+        var extra = [];
+        if (occ.rightsHolder && occ.rightsHolder !== institution) extra.push(occ.rightsHolder);
+        if (occ.recordedBy && occ.recordedBy !== occ.rightsHolder) extra.push(occ.recordedBy);
+        if (extra.length) author += " (" + extra.join(", ").replace(/\|/g, ", ") + ")";
+      }
+
+      var taxonCat = "";
+      if (occ.taxonRank && occ[occ.taxonRank.toLowerCase()]) taxonCat = occ[occ.taxonRank.toLowerCase()];
+
+      var desc =
+        "{{Information\n" +
+        "|description={{en|" + sciName + " " + gbifID + "}}\n" +
+        "|date=" + (occ.eventDate || "") + "\n" +
+        "|source=https://www.gbif.org/occurrence/" + gbifID + "\n" +
+        "|author=" + author + "\n" +
+        "|permission=\n|other versions=\n}}\n\n" +
+        (taxonCat ? "[[Category:" + taxonCat + "]]\n" : "") +
+        (occ.decimalLatitude != null ? "{{location|" + occ.decimalLatitude + "|" + occ.decimalLongitude + "}}\n" : "") +
+        "{{Gbif|" + gbifID + "}}\n" +
+        "[[Category:Reuse images with Tarsier]]\n";
+
+      var destFile = (sciName + " " + gbifID + ext).replace(/[\[\]{}|#<>]/g, "");
+
+      return "https://commons.wikimedia.org/wiki/Special:Upload" +
+        "?wpUploadDescription=" + encodeURIComponent(desc) +
+        "&wpLicense=" + encodeURIComponent(wm) +
+        "&wpDestFile=" + encodeURIComponent(destFile) +
+        "&wpSourceType=url" +
+        "&wpUploadFileURL=" + encodeURIComponent(media.identifier);
+    }
+
+    // The hosting-organization title is needed for the institution template; fetch it if we
+    // have a key, otherwise fall back to dataset/institution fields already on the occurrence.
+    var orgKey = occ.hostingOrganizationKey || occ.publishingOrgKey;
+    if (orgKey) {
+      fetch(API + "/organization/" + orgKey, { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (o) { render(o && o.title); })
+        .catch(function () { render(null); });
+    } else {
+      render(null);
+    }
+  })();
+  </script>
+</body>
+</html>

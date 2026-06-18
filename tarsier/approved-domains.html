@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Check whether an image's source domain is on Wikimedia Commons' copy-upload allow-list, and propose it if it isn't.">
+  <link rel="stylesheet" href="css/pico.min.css">
+  <link rel="shortcut icon" href="favicon.png">
+  <title>Approved source domains — Tarsier</title>
+  <style>
+    .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+    .hero img.logo { width: 90px; height: auto; }
+    .hero h1 { margin: 0; font-size: 1.3rem; }
+    article { max-width: 46rem; }
+    .check { background: #f3f1ea; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .check input { width: 100%; }
+    .verdict { margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.5; }
+    .verdict.ok { color: #27500a; }
+    .verdict.no { color: #854f0b; }
+    .verdict.loading { color: var(--muted-color); }
+    .propose { border: 1px solid #efa027; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .propose[hidden] { display: none; }
+    .propose textarea { width: 100%; min-height: 7.5rem; font-size: 0.85rem; font-family: var(--font-family, sans-serif); }
+    .propose .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .propose .row a, .propose .row button { width: auto; margin: 0; }
+    ol li, ul li { margin-bottom: 0.4rem; }
+    code { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <a href="index.html"><img class="logo" src="images/tarsier-01.png" alt="Tarsier logo"></a>
+      <div><h1>Approved source domains</h1></div>
+    </header>
+
+    <article>
+      <h2>Why this matters</h2>
+      <p>Tarsier does not copy image files itself. When you click <strong>Upload to Wikimedia Commons</strong>,
+      it opens the Commons upload form pre-filled with a link to the image at its original host (for example
+      <code>inaturalist-open-data.s3.amazonaws.com</code> or <code>bs.plantnet.org</code>). Commons then fetches
+      the file directly from that host &mdash; a feature called <em>upload-by-URL</em> (or <em>copy upload</em>).</p>
+
+      <p>For security and licensing reasons, Commons only allows upload-by-URL from a curated
+      <strong>allow-list of source domains</strong>. If an image&rsquo;s host is not on that list, the upload fails
+      with a &ldquo;<em>not in the allowed list of upload domains</em>&rdquo; error &mdash; even when the license is
+      perfectly fine. This is the single most common reason a Tarsier upload does not go through. Many GBIF image
+      hosts (such as Pl@ntNet) are <em>not</em> currently on the list, so this check is worth doing.</p>
+
+      <h2>Check a source domain</h2>
+      <div class="check">
+        <label for="dom">Image URL or domain:</label>
+        <input type="text" id="dom" placeholder="https://bs.plantnet.org/image/o/abc123.jpg">
+        <div class="verdict" id="verdict"></div>
+      </div>
+
+      <div class="propose" id="propose" hidden>
+        <h3 style="margin-top:0;">Propose <code id="propDomain"></code> for the allow-list</h3>
+        <p>The list lives on-wiki at
+        <a href="https://commons.wikimedia.org/wiki/MediaWiki:Copyupload-allowed-domains" target="_blank" rel="noopener">MediaWiki:Copyupload-allowed-domains</a>
+        and is edited by Commons administrators. To get a domain added, post a request on its talk page; an admin
+        reviews it and edits the list. Use the button below to open a pre-titled request, then paste the text:</p>
+        <textarea id="requestText" readonly></textarea>
+        <div class="row">
+          <a id="fileRequest" role="button" href="#" target="_blank" rel="noopener">Open pre-filled request &#8599;</a>
+          <button id="copyRequest" type="button" class="secondary">Copy request text</button>
+        </div>
+        <p style="font-size:0.85rem;margin:0.75rem 0 0;">
+          Before requesting, make sure the host reliably serves <strong>freely-licensed</strong> media
+          (CC0, CC-BY, or CC-BY-SA). Admins will check this.</p>
+      </div>
+
+      <h2>How a domain gets approved</h2>
+      <ol>
+        <li>Confirm the host reliably serves freely-licensed media (CC0, CC-BY, or CC-BY-SA) and is a stable, trusted source.</li>
+        <li>Post an <em>Allowlist request</em> on
+        <a href="https://commons.wikimedia.org/wiki/MediaWiki_talk:Copyupload-allowed-domains" target="_blank" rel="noopener">MediaWiki talk:Copyupload-allowed-domains</a>,
+        naming the domain and the licensing evidence (the button above does this for you).</li>
+        <li>A Commons administrator reviews the request and, if it checks out, adds the domain to
+        <a href="https://commons.wikimedia.org/wiki/MediaWiki:Copyupload-allowed-domains" target="_blank" rel="noopener">the list</a>.
+        The change takes effect immediately &mdash; no deployment needed.</li>
+        <li>For anything that needs server config rather than the on-wiki list, a
+        <a href="https://phabricator.wikimedia.org/" target="_blank" rel="noopener">Phabricator</a> task (tag: <code>Commons</code>) is the fallback.</li>
+      </ol>
+
+      <h2>If a domain is not approved (yet)</h2>
+      <p>You can still add the image to Commons &mdash; just not via Tarsier&rsquo;s one-click URL upload:</p>
+      <ul>
+        <li>Download the file from the source, verify its license, then upload it manually at
+        <a href="https://commons.wikimedia.org/wiki/Special:Upload" target="_blank" rel="noopener">Special:Upload</a>
+        or the <a href="https://commons.wikimedia.org/wiki/Commons:Upload_Wizard" target="_blank" rel="noopener">Upload Wizard</a>.</li>
+        <li>Or propose the domain (above) so future uploads work directly.</li>
+      </ul>
+
+      <p style="margin-top:1.5rem;"><a href="index.html">&larr; Back to Tarsier</a></p>
+    </article>
+  </main>
+  <footer class="container">
+    <hr>
+    <small>Made by Andra Waagmeester for the Wikiproject Biodiversity.</small>
+  </footer>
+
+  <script src="js/commons-domains.js"></script>
+  <script>
+  (function () {
+    var input = document.getElementById("dom");
+    var verdict = document.getElementById("verdict");
+    var propose = document.getElementById("propose");
+    var params = new URLSearchParams(location.search);
+    var sourceUrl = params.get("source") || "";
+    if (params.get("domain")) input.value = params.get("domain");
+
+    var timer = null;
+    function debounce(fn) { clearTimeout(timer); timer = setTimeout(fn, 350); }
+
+    function run() {
+      var host = CommonsDomains.hostOf(input.value);
+      propose.hidden = true;
+      if (!host) { verdict.className = "verdict"; verdict.textContent = ""; return; }
+      verdict.className = "verdict loading";
+      verdict.innerHTML = "Checking <code>" + esc(host) + "</code> against the Commons allow-list&hellip;";
+      CommonsDomains.check(host).then(function (res) {
+        if (res.error) {
+          verdict.className = "verdict";
+          verdict.innerHTML = "Could not load the live allow-list. Check it manually: " +
+            '<a href="https://commons.wikimedia.org/wiki/MediaWiki:Copyupload-allowed-domains" target="_blank" rel="noopener">MediaWiki:Copyupload-allowed-domains</a>.';
+          return;
+        }
+        if (res.match) {
+          verdict.className = "verdict ok";
+          verdict.innerHTML = "&#10003; <code>" + esc(host) + "</code> is on the Commons allow-list " +
+            "(matched <code>" + esc(res.match) + "</code>). Upload-by-URL should work.";
+        } else {
+          verdict.className = "verdict no";
+          verdict.innerHTML = "&#9888; <code>" + esc(host) + "</code> is <strong>not</strong> on the Commons allow-list. " +
+            "Upload-by-URL will fail until it is added &mdash; you can propose it below.";
+          showProposal(host);
+        }
+      });
+    }
+
+    function showProposal(host) {
+      document.getElementById("propDomain").textContent = host;
+      var body = "Requesting addition of " + host + " to the copy-upload allow-list.\n\n" +
+        "This host serves openly-licensed (CC0 / CC-BY / CC-BY-SA) biodiversity media aggregated by GBIF" +
+        (sourceUrl ? " (example: " + sourceUrl + ")" : "") + ". " +
+        "Adding it would let these freely-licensed files be transferred to Commons by URL.\n\n" +
+        "Thank you. ~~" + "~~";
+      document.getElementById("requestText").value = body;
+      document.getElementById("fileRequest").href =
+        "https://commons.wikimedia.org/wiki/MediaWiki_talk:Copyupload-allowed-domains?action=edit&section=new" +
+        "&preloadtitle=" + encodeURIComponent("Allowlist request - " + host);
+      propose.hidden = false;
+    }
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+    document.getElementById("copyRequest").addEventListener("click", function () {
+      var ta = document.getElementById("requestText");
+      ta.select();
+      try { document.execCommand("copy"); this.textContent = "Copied"; }
+      catch (e) { this.textContent = "Select + copy manually"; }
+      var btn = this;
+      setTimeout(function () { btn.textContent = "Copy request text"; }, 1800);
+    });
+
+    input.addEventListener("input", function () { debounce(run); });
+    if (input.value) run();
+  })();
+  </script>
+</body>
+</html>
