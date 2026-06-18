@@ -49,6 +49,7 @@
     .lic.cc0, .lic.ccby { background: #e6f1fb; color: #0c447c; }
     .lic.ccbysa { background: #eaf3de; color: #27500a; border: 1px solid #97c459; }
     .lic.no { background: #f1efe8; color: #5f5e5a; }
+    .thumb .oncommons { position: absolute; top: 8px; right: 8px; background: #e1f5ee; color: #0f6e56; font-size: 0.68rem; padding: 0.12rem 0.45rem; border-radius: 6px; text-decoration: none; border: 1px solid #5dcaa5; }
     .card .body { padding: 0.6rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
     .card .inst { font-size: 0.82rem; color: var(--muted-color); margin: 0; }
     .card .by   { font-size: 0.76rem; color: var(--muted-color); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -56,6 +57,7 @@
     .card .act a.upload { display: block; text-align: center; font-size: 0.82rem; padding: 0.3rem; border-radius: 6px; background: #e6f1fb; color: #0c447c; text-decoration: none; }
     .card .act a.upload:hover { background: #d3e6f8; }
     .card .act .incompat { display: block; text-align: center; font-size: 0.76rem; color: var(--muted-color); }
+    .card .act a.on-commons { display: block; text-align: center; font-size: 0.82rem; padding: 0.3rem; border-radius: 6px; background: #e1f5ee; color: #0f6e56; text-decoration: none; }
     .card .assumed { font-size: 0.7rem; margin: 0; color: var(--muted-color); font-style: italic; }
 
     .loadmore { text-align: center; margin: 1.25rem 0; }
@@ -126,6 +128,7 @@
     </small>
   </footer>
 
+  <script src="js/commons-dup.js"></script>
   <script>
   (function () {
     "use strict";
@@ -428,6 +431,7 @@
       var by = m.creator || occ.recordedBy || m.rightsHolder || occ.rightsHolder || "";
       var card = document.createElement("div");
       card.className = "card" + (lic.reusable ? "" : " dim");
+      card.dataset.img = m.identifier;
 
       var detail = "imagedetails.html?occurenceId=" + encodeURIComponent(occ.key) +
         "&mediaId=" + encodeURIComponent(m.identifier);
@@ -474,6 +478,44 @@
       });
       els.gallery.appendChild(frag);
       resolveDatasetTitles();
+      observeCards(els.gallery);
+    }
+
+    // Lazily flag gallery images that already exist on Wikimedia Commons, checking each card
+    // only as it scrolls into view (identifier-only, so no image downloads).
+    var dupObserver = ("IntersectionObserver" in window) ? new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var card = e.target;
+        dupObserver.unobserve(card);
+        var img = card.dataset.img;
+        if (!img || !window.CommonsDup || !CommonsDup.identifier(img)) return;
+        CommonsDup.check(img).then(function (res) {
+          if (!res.onCommons) return;
+          var fileUrl = CommonsDup.fileUrl(res.title);
+          var thumb = card.querySelector(".thumb");
+          if (thumb) thumb.insertAdjacentHTML("beforeend",
+            '<a class="oncommons" href="' + fileUrl + '" target="_blank" rel="noopener" ' +
+            'title="Already on Wikimedia Commons">on Commons</a>');
+          // Already on Commons: replace the upload action with a link to the existing file.
+          var up = card.querySelector(".act .upload");
+          if (up) {
+            up.className = "on-commons";
+            up.href = fileUrl;
+            up.target = "_blank";
+            up.rel = "noopener";
+            up.textContent = "View on Commons";
+          }
+        });
+      });
+    }, { rootMargin: "200px" }) : null;
+
+    function observeCards(container) {
+      if (!dupObserver) return;
+      container.querySelectorAll(".card[data-img]:not([data-dupwatched])").forEach(function (c) {
+        c.setAttribute("data-dupwatched", "1");
+        dupObserver.observe(c);
+      });
     }
 
     // Top-up pass: from unfiltered records, append only images that are reusable at the image
@@ -496,6 +538,7 @@
         els.extraGrid.appendChild(frag);
         els.extra.hidden = false;
         resolveDatasetTitles();
+        observeCards(els.extraGrid);
       }
     }
 

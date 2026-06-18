@@ -17,13 +17,17 @@
     table.meta td { padding: 0.3rem 0.5rem; vertical-align: top; font-size: 0.9rem; word-break: break-word; }
     table.meta td.k { color: var(--muted-color); white-space: nowrap; width: 9rem; }
     a.upload-btn { display: inline-block; margin-top: 1rem; }
+    a.upload-btn.disabled { opacity: 0.5; pointer-events: none; }
     table.meta code { background: rgba(0,0,0,0.06); padding: 0.05rem 0.3rem; border-radius: 4px; }
     .assumed-note { color: var(--muted-color); display: inline-block; margin-top: 0.25rem; line-height: 1.4; }
     .dom-status .ok { color: #27500a; }
     .dom-status .no { color: #854f0b; }
+    .dup { background: #e1f5ee; border: 1px solid #5dcaa5; color: #0f6e56; border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.88rem; line-height: 1.45; margin: 0 0 1rem; }
+    .dup a { color: #0f6e56; font-weight: 500; }
     .notice { padding: 2rem 1rem; text-align: center; color: var(--muted-color); }
   </style>
   <script src="js/commons-domains.js"></script>
+  <script src="js/commons-dup.js"></script>
 </head>
 <body>
   <main class="container">
@@ -139,10 +143,37 @@
         '<div class="detail">' +
           '<div><img class="preview" src="' + esc(media.identifier) + '" alt="' + esc(sciName) +
             '" onerror="this.onerror=null;this.src=\'images/tarsier-01.png\';"></div>' +
-          '<div><h2 style="font-style:italic;margin-top:0;">' + esc(sciName) + '</h2>' + meta + action + '</div>' +
+          '<div><h2 style="font-style:italic;margin-top:0;">' + esc(sciName) + '</h2>' +
+            '<div id="dupBanner"></div>' + meta + action + '</div>' +
         '</div>';
 
       if (sourceHost) checkDomainStatus(sourceHost, sourcePage);
+      checkCommonsDup(media.identifier);
+    }
+
+    // Tell the user if this exact image is already on Commons, so they don't upload a duplicate.
+    // Single image here, so the SHA-1 fallback (byte-exact match) is worth the download.
+    function checkCommonsDup(imgUrl) {
+      var el = document.getElementById("dupBanner");
+      if (!el || !window.CommonsDup || !imgUrl) return;
+      CommonsDup.check(imgUrl, { sha1: true }).then(function (res) {
+        if (!res.onCommons) return;
+        el.innerHTML = '<div class="dup">&#10003; Already on Wikimedia Commons: ' +
+          '<a href="' + CommonsDup.fileUrl(res.title) + '" target="_blank" rel="noopener">' +
+          esc(res.title.replace(/^File:/, "")) + '</a> &mdash; ' +
+          (res.via === "sha1" ? "exact same file" : "matched by its source link") +
+          '. Uploading again would create a duplicate.</div>';
+        // Already on Commons: disable the upload action and point the user to the existing file.
+        var btn = document.querySelector("a.upload-btn");
+        if (btn) {
+          btn.classList.add("disabled");
+          btn.setAttribute("aria-disabled", "true");
+          btn.removeAttribute("href");
+          btn.textContent = "Already on Wikimedia Commons";
+        }
+        var warn = document.getElementById("uploadDomWarn");
+        if (warn) warn.innerHTML = "";
+      });
     }
 
     // Tell the user, live, whether this image's host is on the Commons copy-upload allow-list,
