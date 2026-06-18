@@ -28,6 +28,7 @@
   </style>
   <script src="js/commons-domains.js"></script>
   <script src="js/commons-dup.js"></script>
+  <script src="js/ala.js"></script>
 </head>
 <body>
   <main class="container">
@@ -239,15 +240,33 @@
 
     // The hosting-organization title is needed for the institution template; fetch it if we
     // have a key, otherwise fall back to dataset/institution fields already on the occurrence.
-    var orgKey = occ.hostingOrganizationKey || occ.publishingOrgKey;
-    if (orgKey) {
-      fetch(API + "/organization/" + orgKey, { headers: { Accept: "application/json" } })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (o) { render(o && o.title); })
-        .catch(function () { render(null); });
-    } else {
-      render(null);
+    function proceed() {
+      var orgKey = occ.hostingOrganizationKey || occ.publishingOrgKey;
+      if (orgKey) {
+        fetch(API + "/organization/" + orgKey, { headers: { Accept: "application/json" } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (o) { render(o && o.title); })
+          .catch(function () { render(null); });
+      } else {
+        render(null);
+      }
     }
+
+    // ALA images come from GBIF as a redirecting proxy/thumbnail URL. Resolve it to the direct
+    // full-size file (which Commons can fetch without following a redirect) and use ALA's
+    // license/attribution where GBIF's is missing, before rendering. No-op for non-ALA images.
+    (window.AlaImages ? AlaImages.resolve(media.identifier) : Promise.resolve(null))
+      .then(function (ala) {
+        if (ala) {
+          media.identifier = ala.url;
+          if (ala.mimeType) media.format = ala.mimeType;
+          if (!media.license && ala.license) media.license = ala.license;
+          if (!occ.rightsHolder && ala.rightsHolder) occ.rightsHolder = ala.rightsHolder;
+          if (!occ.recordedBy && ala.creator) occ.recordedBy = ala.creator;
+        }
+      })
+      .catch(function () {})
+      .then(proceed);
   })();
   </script>
 </body>
