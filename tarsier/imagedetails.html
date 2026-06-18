@@ -13,9 +13,12 @@
     .detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
     @media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
     .detail img.preview { width: 100%; height: auto; border-radius: 8px; background: #f3f1ea; }
-    table.meta td { padding: 0.3rem 0.5rem; vertical-align: top; font-size: 0.9rem; }
-    table.meta td.k { color: var(--muted-color); white-space: nowrap; }
+    table.meta { width: 100%; table-layout: fixed; }
+    table.meta td { padding: 0.3rem 0.5rem; vertical-align: top; font-size: 0.9rem; word-break: break-word; }
+    table.meta td.k { color: var(--muted-color); white-space: nowrap; width: 9rem; }
     a.upload-btn { display: inline-block; margin-top: 1rem; }
+    table.meta code { background: rgba(0,0,0,0.06); padding: 0.05rem 0.3rem; border-radius: 4px; }
+    .assumed-note { color: var(--muted-color); display: inline-block; margin-top: 0.25rem; line-height: 1.4; }
     .notice { padding: 2rem 1rem; text-align: center; color: var(--muted-color); }
   </style>
 </head>
@@ -80,31 +83,52 @@
     var media = (occ.media || []).filter(function (m) { return m.identifier === params.mediaId; })[0] ||
                 (occ.media || [])[0] || {};
 
+    function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return ""; } }
+
     function render(orgTitle) {
       var institution = orgTitle || occ.datasetName || occ.institutionCode || "Unknown source";
-      var wm = wmLicense(media.license);
+      // The image's own license is authoritative; if GBIF has none on the image, fall back to
+      // the record license and say so. (Historically GBIF couldn't filter by image license at all,
+      // so the record license was the only signal available at search time.)
+      var imageLicense = media.license || "";
+      var assumed = !imageLicense && !!occ.license;
+      var effective = imageLicense || occ.license || "";
+      var wm = wmLicense(effective);
       var ext = EXT[(media.format || "").toLowerCase()] || "";
       var sciName = occ.acceptedScientificName || occ.scientificName || "Unknown taxon";
+      var sourcePage = media.references || ("https://www.gbif.org/occurrence/" + encodeURIComponent(occ.gbifID || occ.key));
+      var sourceHost = hostOf(media.identifier);
+
+      var licenseCell = esc(effective || "—") + (assumed
+        ? '<br><small class="assumed-note">GBIF lists no license on this individual image, so Tarsier assumes the ' +
+          'record-level license above applies. That is usually right but not guaranteed &mdash; ' +
+          '<a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">check the source &#8599;</a> if unsure.</small>'
+        : "");
 
       var meta =
         '<table class="meta">' +
           row("Scientific name", esc(sciName)) +
           row("GBIF occurrence", '<a href="https://www.gbif.org/occurrence/' + encodeURIComponent(occ.gbifID || occ.key) + '">' + esc(occ.gbifID || occ.key) + '</a>') +
-          row("License", esc(media.license || "—")) +
+          row(assumed ? "License (from record)" : "License (image)", licenseCell) +
           row("Institution", esc(institution)) +
           (occ.recordedBy ? row("Recorded by", esc(occ.recordedBy)) : "") +
           (occ.eventDate ? row("Date", esc(occ.eventDate)) : "") +
+          row("Source", '<a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">view source page &#8599;</a>') +
+          (sourceHost ? row("Source host", '<code>' + esc(sourceHost) + '</code> &middot; ' +
+            '<a href="approved-domains.html?domain=' + encodeURIComponent(sourceHost) + '" target="_blank" rel="noopener">is it approved?</a>') : "") +
         '</table>';
 
       var action;
       if (wm) {
-        action = '<a class="upload-btn" role="button" href="' + esc(buildCommonsUrl(institution, wm, ext, sciName)) +
+        action =
+          '<a class="upload-btn" role="button" href="' + esc(buildCommonsUrl(institution, wm, ext, sciName)) +
           '" target="_blank" rel="noopener">Upload to Wikimedia Commons</a>' +
-          '<p><small>Opens a pre-filled Commons upload form. Upload-by-URL only works for ' +
-          '<a href="https://commons.wikimedia.org/wiki/Commons:Upload_tools/wgCopyUploadsDomains" target="_blank" rel="noopener">approved source domains</a>; ' +
-          'a Wikimedia account is required.</small></p>';
+          '<p><small>Opens a pre-filled Commons upload form. Upload-by-URL only works from ' +
+          '<a href="approved-domains.html" target="_blank" rel="noopener">approved source domains</a>' +
+          (sourceHost ? ' (this image&rsquo;s host is <code>' + esc(sourceHost) + '</code>)' : '') +
+          '; a Wikimedia account is required.</small></p>';
       } else {
-        action = '<p><small>This image\'s license (' + esc(media.license || "unspecified") +
+        action = '<p><small>This image&rsquo;s license (' + esc(effective || "unspecified") +
           ') is not compatible with Wikimedia Commons.</small></p>';
       }
 

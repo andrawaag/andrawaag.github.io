@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Why Wikimedia Commons only allows upload-by-URL from approved source domains, and how a domain gets added to the allow-list.">
+  <link rel="stylesheet" href="css/pico.min.css">
+  <link rel="shortcut icon" href="favicon.png">
+  <title>Approved source domains — Tarsier</title>
+  <style>
+    .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+    .hero img.logo { width: 90px; height: auto; }
+    .hero h1 { margin: 0; font-size: 1.3rem; }
+    article { max-width: 46rem; }
+    .check { background: #f3f1ea; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .check input { width: 100%; }
+    .verdict { margin-top: 0.75rem; font-size: 0.95rem; }
+    .ok { color: #27500a; }
+    .warn { color: #854f0b; }
+    ol li, ul li { margin-bottom: 0.4rem; }
+    code { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <a href="index.html"><img class="logo" src="images/tarsier-01.png" alt="Tarsier logo"></a>
+      <div><h1>Approved source domains</h1></div>
+    </header>
+
+    <article>
+      <h2>Why this matters</h2>
+      <p>Tarsier does not copy image files itself. When you click <strong>Upload to Wikimedia Commons</strong>,
+      it opens the Commons upload form pre-filled with a link to the image at its original host (for example
+      <code>inaturalist-open-data.s3.amazonaws.com</code> or <code>bs.plantnet.org</code>). Commons then fetches
+      the file directly from that host &mdash; a feature called <em>upload-by-URL</em> (or <em>copy upload</em>).</p>
+
+      <p>For security and licensing reasons, Commons only allows upload-by-URL from a curated
+      <strong>allow-list of source domains</strong> (the <code>$wgCopyUploadsDomains</code> configuration).
+      If an image&rsquo;s host is not on that list, the upload will fail with a
+      &ldquo;<em>not in the allowed list of upload domains</em>&rdquo; error &mdash; even when the license is perfectly fine.
+      This is the single most common reason a Tarsier upload does not go through.</p>
+
+      <h2>Check a source domain</h2>
+      <div class="check">
+        <label for="dom">Paste an image URL or domain to see its host:</label>
+        <input type="text" id="dom" placeholder="https://inaturalist-open-data.s3.amazonaws.com/photos/123.jpg">
+        <div class="verdict" id="verdict"></div>
+        <p style="margin:0.5rem 0 0;font-size:0.85rem;">
+          Tarsier cannot read the live Commons configuration, so this only extracts the host for you.
+          Confirm it against the official list:
+          <a href="https://commons.wikimedia.org/wiki/Commons:Upload_tools/wgCopyUploadsDomains" target="_blank" rel="noopener">Commons:Upload tools/wgCopyUploadsDomains</a>.
+        </p>
+      </div>
+
+      <h2>How a domain gets approved</h2>
+      <p>The allow-list is part of Wikimedia&rsquo;s server configuration, so adding a domain is a community + sysadmin
+      process rather than something you can change yourself:</p>
+      <ol>
+        <li>Confirm the host reliably serves <strong>freely-licensed</strong> media (CC0, CC-BY, or CC-BY-SA) and is
+        a stable, trusted source.</li>
+        <li>Start a discussion at the
+        <a href="https://commons.wikimedia.org/wiki/Commons:Village_pump/Proposals" target="_blank" rel="noopener">Commons Village pump (proposals)</a>
+        to establish consensus that the domain should be allowed for copy-upload.</li>
+        <li>With consensus, file a configuration-change request on
+        <a href="https://phabricator.wikimedia.org/" target="_blank" rel="noopener">Phabricator</a>
+        (tagged for the Commons/MediaWiki-Configuration team) asking to add the domain to
+        <code>$wgCopyUploadsDomains</code> in
+        <a href="https://gerrit.wikimedia.org/g/operations/mediawiki-config" target="_blank" rel="noopener">operations/mediawiki-config</a>.</li>
+        <li>A maintainer merges the change and it is deployed; the domain then works for upload-by-URL.</li>
+      </ol>
+
+      <h2>If a domain is not approved</h2>
+      <p>You can still add the image to Commons &mdash; just not via Tarsier&rsquo;s one-click URL upload. Options:</p>
+      <ul>
+        <li>Download the file from the source, verify its license, then upload it manually at
+        <a href="https://commons.wikimedia.org/wiki/Special:Upload" target="_blank" rel="noopener">Special:Upload</a>.</li>
+        <li>Use the <a href="https://commons.wikimedia.org/wiki/Commons:Upload_Wizard" target="_blank" rel="noopener">Upload Wizard</a>,
+        which accepts local files.</li>
+        <li>Request that the domain be added (see above) so future uploads work directly.</li>
+      </ul>
+
+      <p style="margin-top:1.5rem;"><a href="index.html">&larr; Back to Tarsier</a></p>
+    </article>
+  </main>
+  <footer class="container">
+    <hr>
+    <small>Made by Andra Waagmeester for the Wikiproject Biodiversity.</small>
+  </footer>
+
+  <script>
+  (function () {
+    var input = document.getElementById("dom");
+    var out = document.getElementById("verdict");
+    // Pre-fill from ?domain= so the detail page can deep-link here with the image host.
+    var q = new URLSearchParams(location.search).get("domain");
+    if (q) { input.value = q; }
+
+    function host(v) {
+      v = (v || "").trim();
+      if (!v) return "";
+      try { return new URL(v.indexOf("//") > -1 ? v : "https://" + v).hostname; }
+      catch (e) { return v.replace(/^.*?:\/\//, "").split("/")[0]; }
+    }
+    function update() {
+      var h = host(input.value);
+      out.innerHTML = h
+        ? 'Source host: <code>' + h.replace(/[<>&]/g, "") + '</code> &mdash; check it against the official list below.'
+        : "";
+    }
+    input.addEventListener("input", update);
+    update();
+  })();
+  </script>
+</body>
+</html>

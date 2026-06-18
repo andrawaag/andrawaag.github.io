@@ -28,6 +28,7 @@
     .summary .sci { font-style: italic; font-weight: 600; font-size: 1.15rem; }
     .summary .meta { color: var(--muted-color); font-size: 0.85rem; }
     .summary .total { margin-left: auto; color: var(--muted-color); font-size: 0.85rem; }
+    .summary .note { margin: 0.6rem 0 0; font-size: 0.85rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
     .chip { font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid transparent; }
     .chip.cc0      { background: #e6f1fb; color: #0c447c; }
@@ -55,8 +56,13 @@
     .card .act a.upload { display: block; text-align: center; font-size: 0.82rem; padding: 0.3rem; border-radius: 6px; background: #e6f1fb; color: #0c447c; text-decoration: none; }
     .card .act a.upload:hover { background: #d3e6f8; }
     .card .act .incompat { display: block; text-align: center; font-size: 0.76rem; color: var(--muted-color); }
+    .card .assumed { font-size: 0.7rem; margin: 0; color: var(--muted-color); font-style: italic; }
 
     .loadmore { text-align: center; margin: 1.25rem 0; }
+    .scan-status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-size: 0.82rem; color: var(--muted-color); margin: 0.5rem 0; }
+    .scan-status button { width: auto; margin: 0; padding: 0.2rem 0.7rem; font-size: 0.8rem; }
+    .extra-head { font-size: 1.05rem; margin: 1.25rem 0 0.75rem; }
+    .extra-head small { color: var(--muted-color); font-weight: normal; font-size: 0.8rem; }
     .alts { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--card-border-color, #e0e0e0); }
     .alts .label { font-size: 0.85rem; color: var(--muted-color); margin-bottom: 0.4rem; }
     .alts button { font-size: 0.82rem; font-style: italic; width: auto; margin: 0 0.4rem 0.4rem 0; padding: 0.25rem 0.7rem; }
@@ -73,7 +79,7 @@
     </header>
 
     <form class="search" role="search" autocomplete="off">
-      <input type="text" id="name" name="name" placeholder="Type a scientific name, e.g. Euphorbia neriifolia" aria-label="Scientific taxon name">
+      <input type="text" id="name" name="name" placeholder="Scientific or common name, e.g. Euphorbia neriifolia or &ldquo;lion&rdquo;" aria-label="Scientific or common taxon name">
       <button type="submit">Search</button>
     </form>
 
@@ -81,6 +87,7 @@
       <p><a href="https://gbif.org">GBIF</a> provides free and open access to biodiversity data, including images of specimens.
       Tarsier searches those images for ones with an open license you can reuse, and where the license is compatible it
       links straight to a pre-filled <a href="https://commons.wikimedia.org">Wikimedia Commons</a> upload (a Wikimedia account is required).
+      Search by scientific name, or by a common name &mdash; common names are resolved to a taxon via <a href="https://www.wikidata.org">Wikidata</a>.
       Issues and pull requests are welcome on <a href="https://github.com/andrawaag/andrawaag.github.io/issues">GitHub</a>.</p>
     </section>
 
@@ -95,12 +102,28 @@
     <div id="resultsBar" class="results-bar" hidden></div>
     <div id="gallery" class="grid-gallery"></div>
     <div id="loadmore" class="loadmore" hidden><button id="loadmoreBtn" type="button">Load more</button></div>
+
+    <div id="scanStatus" class="scan-status" hidden>
+      <span id="extraNote"></span>
+      <button id="scanMoreBtn" type="button" hidden>Scan more records</button>
+    </div>
+    <div id="extra" hidden>
+      <h3 class="extra-head">Also openly licensed at the image level
+        <small>&mdash; the image carries an open license even though the GBIF record isn&rsquo;t flagged reusable</small></h3>
+      <div id="extraGrid" class="grid-gallery"></div>
+    </div>
+
     <div id="alts" class="alts" hidden></div>
   </main>
 
   <footer class="container">
     <hr>
-    <small>Made by Andra Waagmeester for the Wikiproject Biodiversity.</small>
+    <small>
+      Made by Andra Waagmeester for the Wikiproject Biodiversity &middot;
+      <a href="approved-domains.html">About Commons upload domains</a> &middot;
+      <a href="https://github.com/andrawaag/andrawaag.github.io/issues">Issues</a> &middot;
+      Tarsier v2
+    </small>
   </footer>
 
   <script>
@@ -122,6 +145,11 @@
       loadmoreBtn: document.getElementById("loadmoreBtn"),
       controls: document.getElementById("controls"),
       showAll: document.getElementById("showAll"),
+      scanStatus: document.getElementById("scanStatus"),
+      extraNote: document.getElementById("extraNote"),
+      scanMoreBtn: document.getElementById("scanMoreBtn"),
+      extra: document.getElementById("extra"),
+      extraGrid: document.getElementById("extraGrid"),
       alts: document.getElementById("alts")
     };
 
@@ -130,8 +158,12 @@
     // where it is detected per image from the media license.)
     var REUSABLE_FILTER = "&license=CC0_1_0&license=CC_BY_4_0";
 
-    var state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false };
+    var state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false,
+                  scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
+    var shownIds = {};      // media identifiers already on the page (dedupe across both passes)
     var datasetTitles = {}; // datasetKey -> human title, resolved once and reused
+    var SCAN_PAGE = 100;    // records per request during the background top-up scan
+    var SCAN_BATCH = 3;     // requests per "scan more" batch (~300 records)
 
     function esc(s) {
       return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -163,13 +195,31 @@
       return { reusable: false, cls: "no", label: "Custom / all rights reserved", wm: null };
     }
 
+    // The individual image (media) license is authoritative. When GBIF has no license on the
+    // image itself, fall back to the record (occurrence) license and flag that it's an assumption.
+    function effectiveLicense(media, occ) {
+      if (media.license) return { lic: classify(media.license), value: media.license, assumed: false };
+      if (occ && occ.license) return { lic: classify(occ.license), value: occ.license, assumed: true };
+      return { lic: classify(""), value: "", assumed: false };
+    }
+
+    // True when the record's own license is one the primary (record-filtered) pass already covers,
+    // i.e. CC0 or CC-BY. The top-up pass skips these so it only surfaces image-level-only matches.
+    function recordIsReusable(occ) {
+      var c = classify(occ && occ.license).cls;
+      return c === "cc0" || c === "ccby";
+    }
+
     function showStatus(html) { els.status.innerHTML = html; els.status.hidden = false; }
     function hideStatus() { els.status.hidden = true; }
 
     function resetView() {
-      state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false };
+      state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false,
+                scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
+      shownIds = {};
       els.summary.innerHTML = "";
       els.gallery.innerHTML = "";
+      resetExtra();
       els.alts.innerHTML = "";
       els.alts.hidden = true;
       els.controls.hidden = true;
@@ -177,11 +227,22 @@
       els.loadmore.hidden = true;
     }
 
+    function resetExtra() {
+      state.scanOffset = 0; state.scannedRecords = 0; state.extraCount = 0;
+      state.scanning = false; state.topUpStarted = false;
+      els.extraGrid.innerHTML = "";
+      els.extra.hidden = true;
+      els.scanStatus.hidden = true;
+      els.scanMoreBtn.hidden = true;
+    }
+
     // Re-run just the gallery (keep the matched taxon) after the filter toggle changes.
     function reloadGallery() {
       if (state.taxonKey == null) return;
       state.offset = 0; state.shown = 0;
+      shownIds = {};
       els.gallery.innerHTML = "";
+      resetExtra();
       els.resultsBar.hidden = true;
       els.loadmore.hidden = true;
       loadPage(true);
@@ -196,7 +257,8 @@
       } catch (e) { /* private mode / disabled storage */ }
     }
 
-    function search(name) {
+    function search(name, opts) {
+      opts = opts || {};
       name = (name || "").trim();
       if (!name) return;
       els.intro.hidden = true;
@@ -208,14 +270,20 @@
         .then(function (m) {
           renderAlternatives(m.alternatives);
           if (!m.usageKey) {
-            showStatus('<p>No taxon matched &ldquo;' + esc(name) + '&rdquo;. Check the spelling, or try one of the suggestions below.</p>');
-            return null;
+            // GBIF matches scientific names, not vernaculars. If nothing matched and this
+            // wasn't already a Wikidata-resolved name, try resolving it as a common name.
+            if (opts.viaWikidata) {
+              showStatus('<p>Wikidata resolved &ldquo;' + esc(opts.common) + '&rdquo; to <em>' + esc(name) +
+                '</em>, but GBIF has no taxon under that name.</p>');
+              return null;
+            }
+            return resolveVernacular(name);
           }
           state.taxonKey = m.usageKey;
           return getJSON(API + "/occurrence/search?taxonKey=" + m.usageKey +
             "&mediaType=StillImage&limit=0&facet=license&facetLimit=10")
             .then(function (f) {
-              renderSummary(m, f);
+              renderSummary(m, f, opts.note);
               return loadPage(true);
             });
         })
@@ -225,7 +293,70 @@
         });
     }
 
-    function renderSummary(match, facetData) {
+    // Resolve a common/vernacular name to scientific name(s) via Wikidata, then search GBIF.
+    function resolveVernacular(term) {
+      showStatus('<img src="' + LOGO + '" alt=""><p>No scientific-name match &mdash; looking up &ldquo;' +
+        esc(term) + '&rdquo; as a common name in Wikidata&hellip;</p>');
+      return wikidataVernacular(term)
+        .then(function (hits) {
+          if (!hits.length) {
+            showStatus('<p>No taxon matched &ldquo;' + esc(term) + '&rdquo; on GBIF or Wikidata. ' +
+              'Try the scientific name, or check the spelling.</p>');
+            return null;
+          }
+          if (hits.length === 1) {
+            return search(hits[0].sciName, {
+              viaWikidata: true, common: term,
+              note: 'Matched common name &ldquo;' + esc(term) + '&rdquo; &rarr; <em>' + esc(hits[0].sciName) +
+                '</em> via <a href="https://www.wikidata.org/wiki/' + esc(hits[0].qid) +
+                '" target="_blank" rel="noopener">Wikidata</a>.'
+            });
+          }
+          renderVernacularChoices(term, hits);
+          return null;
+        })
+        .catch(function () {
+          showStatus('<p>No scientific-name match, and the Wikidata lookup failed. ' +
+            'Try the scientific name instead.</p>');
+        });
+    }
+
+    // Wikidata: search entities for the term, keep those that are taxa (have a P225 taxon name).
+    function wikidataVernacular(term) {
+      var WD = "https://www.wikidata.org/w/api.php";
+      return getJSON(WD + "?action=wbsearchentities&format=json&origin=*&type=item&limit=12&language=en&uselang=en&search=" + encodeURIComponent(term))
+        .then(function (r) {
+          var ids = (r.search || []).map(function (s) { return s.id; });
+          if (!ids.length) return [];
+          return getJSON(WD + "?action=wbgetentities&format=json&origin=*&props=labels|claims&languages=en&ids=" + ids.join("|"))
+            .then(function (r2) {
+              var out = [], seen = {};
+              ids.forEach(function (qid) { // preserve Wikidata's relevance ranking
+                var e = (r2.entities || {})[qid];
+                if (!e || !e.claims || !e.claims.P225) return;
+                var snak = e.claims.P225[0] && e.claims.P225[0].mainsnak;
+                var sci = snak && snak.datavalue && snak.datavalue.value;
+                if (!sci || seen[sci]) return;
+                seen[sci] = true;
+                out.push({ qid: qid, sciName: sci, label: (e.labels && e.labels.en) ? e.labels.en.value : sci });
+              });
+              return out;
+            });
+        });
+    }
+
+    function renderVernacularChoices(term, hits) {
+      showStatus('<p>&ldquo;' + esc(term) + '&rdquo; matches several taxa in Wikidata &mdash; pick one:</p>');
+      var html = '<p class="label">Common-name matches (via Wikidata)</p>';
+      hits.slice(0, 8).forEach(function (h) {
+        var label = h.sciName + (h.label && h.label !== h.sciName ? " — " + h.label : "");
+        html += '<button type="button" data-name="' + esc(h.sciName) + '">' + esc(label) + '</button>';
+      });
+      els.alts.innerHTML = html;
+      els.alts.hidden = false;
+    }
+
+    function renderSummary(match, facetData, note) {
       var counts = {};
       var facets = (facetData.facets && facetData.facets[0] && facetData.facets[0].counts) || [];
       facets.forEach(function (c) { counts[c.name] = c.count; });
@@ -245,6 +376,7 @@
             '<span class="total">' + (cc0 + ccby) + '+ openly-licensed images on GBIF</span>' +
           '</div>' +
           '<div class="chips">' + chips + '</div>' +
+          (note ? '<p class="note">' + note + '</p>' : "") +
         '</div>';
     }
 
@@ -262,11 +394,15 @@
           renderCards(data.results || []);
           updateResultsBar();
           els.loadmore.hidden = data.endOfRecords;
-          if (first && state.shown === 0) {
-            showStatus(els.showAll.checked
-              ? '<p>No still images found for this taxon on GBIF.</p>'
-              : '<p>No openly-licensed (CC0 / CC-BY) images found for this taxon. ' +
-                'Tick &ldquo;Include non-reusable images&rdquo; above to see what else GBIF has.</p>');
+          if (first && state.shown === 0 && els.showAll.checked) {
+            showStatus('<p>No still images found for this taxon on GBIF.</p>');
+          }
+          // Second pass: GBIF can only filter by record license, so after the fast record-filtered
+          // page, scan unfiltered records in the background for images that are open at the image
+          // level even though their record isn't flagged reusable. (Not needed in show-all mode.)
+          if (first && !els.showAll.checked && !state.topUpStarted) {
+            state.topUpStarted = true;
+            startScan();
           }
         })
         .catch(function (err) {
@@ -278,43 +414,61 @@
         });
     }
 
+    function instOf(occ) {
+      var dsKey = occ.datasetKey || "";
+      return {
+        text: occ.datasetName || datasetTitles[dsKey] || occ.institutionCode || "Loading source…",
+        attr: (!occ.datasetName && !datasetTitles[dsKey] && dsKey) ? ' data-dskey="' + esc(dsKey) + '"' : ""
+      };
+    }
+
+    function cardFor(occ, m, inst) {
+      var resolved = effectiveLicense(m, occ);
+      var lic = resolved.lic;
+      var by = m.creator || occ.recordedBy || m.rightsHolder || occ.rightsHolder || "";
+      var card = document.createElement("div");
+      card.className = "card" + (lic.reusable ? "" : " dim");
+
+      var detail = "imagedetails.html?occurenceId=" + encodeURIComponent(occ.key) +
+        "&mediaId=" + encodeURIComponent(m.identifier);
+
+      var thumbInner =
+        '<img src="' + esc(m.identifier) + '" loading="lazy" alt="' + esc(occ.acceptedScientificName || "specimen") +
+        '" onerror="this.onerror=null;this.src=\'' + LOGO + '\';this.classList.add(\'fallback\');">';
+      var thumb = '<div class="thumb">' +
+        '<span class="lic ' + lic.cls + '">' + lic.label + '</span>' +
+        (lic.reusable ? '<a href="' + detail + '">' + thumbInner + '</a>' : thumbInner) +
+        '</div>';
+
+      var act = lic.reusable
+        ? '<a class="upload" href="' + detail + '">Upload to Commons</a>'
+        : '<span class="incompat">Not Commons-compatible</span>';
+
+      // Mark images whose license is assumed from the record (no image-level license in GBIF).
+      var assumedTag = resolved.assumed
+        ? '<p class="assumed" title="GBIF lists no license for this individual image; the record license is assumed.">license from record</p>'
+        : "";
+
+      card.innerHTML = thumb +
+        '<div class="body">' +
+          '<p class="inst"' + inst.attr + '>' + esc(inst.text) + '</p>' +
+          (by ? '<p class="by" title="' + esc(by) + '">&#128247; ' + esc(by) + '</p>' : '') +
+          assumedTag +
+          '<div class="act">' + act + '</div>' +
+        '</div>';
+      return { el: card, reusable: lic.reusable };
+    }
+
+    // Primary pass: render every image of the fetched records (each judged at the image level).
     function renderCards(results) {
       var frag = document.createDocumentFragment();
       results.forEach(function (occ) {
-        var occId = occ.key;
-        try { localStorage.setItem("occuranceData_" + occId, JSON.stringify(occ)); } catch (e) {}
-        var dsKey = occ.datasetKey || "";
-        var inst = occ.datasetName || datasetTitles[dsKey] || occ.institutionCode || "Loading source…";
-        var instAttr = (!occ.datasetName && !datasetTitles[dsKey] && dsKey) ? ' data-dskey="' + esc(dsKey) + '"' : "";
+        try { localStorage.setItem("occuranceData_" + occ.key, JSON.stringify(occ)); } catch (e) {}
+        var inst = instOf(occ);
         (occ.media || []).forEach(function (m) {
-          if (!m.identifier) return;
-          var lic = classify(m.license);
-          var by = m.creator || occ.recordedBy || m.rightsHolder || occ.rightsHolder || "";
-          var card = document.createElement("div");
-          card.className = "card" + (lic.reusable ? "" : " dim");
-
-          var detail = "imagedetails.html?occurenceId=" + encodeURIComponent(occId) +
-            "&mediaId=" + encodeURIComponent(m.identifier);
-
-          var thumbInner =
-            '<img src="' + esc(m.identifier) + '" loading="lazy" alt="' + esc(occ.acceptedScientificName || "specimen") +
-            '" onerror="this.onerror=null;this.src=\'' + LOGO + '\';this.classList.add(\'fallback\');">';
-          var thumb = '<div class="thumb">' +
-            '<span class="lic ' + lic.cls + '">' + lic.label + '</span>' +
-            (lic.reusable ? '<a href="' + detail + '">' + thumbInner + '</a>' : thumbInner) +
-            '</div>';
-
-          var act = lic.reusable
-            ? '<a class="upload" href="' + detail + '">Upload to Commons</a>'
-            : '<span class="incompat">Not Commons-compatible</span>';
-
-          card.innerHTML = thumb +
-            '<div class="body">' +
-              '<p class="inst"' + instAttr + '>' + esc(inst) + '</p>' +
-              (by ? '<p class="by" title="' + esc(by) + '">&#128247; ' + esc(by) + '</p>' : '') +
-              '<div class="act">' + act + '</div>' +
-            '</div>';
-          frag.appendChild(card);
+          if (!m.identifier || shownIds[m.identifier]) return;
+          shownIds[m.identifier] = true;
+          frag.appendChild(cardFor(occ, m, inst).el);
           state.shown++;
         });
       });
@@ -322,11 +476,78 @@
       resolveDatasetTitles();
     }
 
+    // Top-up pass: from unfiltered records, append only images that are reusable at the image
+    // level and not already shown (i.e. open images the record-level filter would have missed).
+    function renderExtra(results) {
+      var frag = document.createDocumentFragment();
+      results.forEach(function (occ) {
+        if (recordIsReusable(occ)) return; // primary pass (via Load more) already covers these
+        var inst = instOf(occ);
+        (occ.media || []).forEach(function (m) {
+          if (!m.identifier || shownIds[m.identifier]) return;
+          if (!effectiveLicense(m, occ).lic.reusable) return;
+          shownIds[m.identifier] = true;
+          try { localStorage.setItem("occuranceData_" + occ.key, JSON.stringify(occ)); } catch (e) {}
+          frag.appendChild(cardFor(occ, m, inst).el);
+          state.extraCount++;
+        });
+      });
+      if (frag.childNodes.length) {
+        els.extraGrid.appendChild(frag);
+        els.extra.hidden = false;
+        resolveDatasetTitles();
+      }
+    }
+
+    function startScan() { state.scanOffset = 0; scanBatch(); }
+
+    function scanBatch() {
+      if (state.scanning || els.showAll.checked || state.taxonKey == null) return;
+      state.scanning = true;
+      els.scanStatus.hidden = false;
+      els.scanMoreBtn.hidden = true;
+      els.scanMoreBtn.setAttribute("aria-busy", "true");
+      var pages = 0;
+      function step() {
+        if (pages >= SCAN_BATCH) { endBatch(false); return; }
+        getJSON(API + "/occurrence/search?taxonKey=" + state.taxonKey +
+          "&mediaType=StillImage&limit=" + SCAN_PAGE + "&offset=" + state.scanOffset)
+          .then(function (data) {
+            state.scanOffset += SCAN_PAGE;
+            state.scannedRecords += (data.results || []).length;
+            renderExtra(data.results || []);
+            pages++;
+            updateScanNote(false);
+            if (data.endOfRecords) endBatch(true); else step();
+          })
+          .catch(function () { endBatch(true); });
+      }
+      function endBatch(done) {
+        state.scanning = false;
+        els.scanMoreBtn.removeAttribute("aria-busy");
+        els.scanMoreBtn.hidden = done;
+        updateScanNote(done);
+        if (done && state.shown === 0 && state.extraCount === 0) {
+          showStatus('<p>No openly-licensed images found for this taxon, even at the image level. ' +
+            'Tick &ldquo;Include non-reusable images&rdquo; to see everything GBIF has.</p>');
+        }
+      }
+      step();
+    }
+
+    function updateScanNote(done) {
+      els.scanStatus.hidden = false;
+      var msg = "Image-level scan: checked " + state.scannedRecords + " record" + (state.scannedRecords === 1 ? "" : "s");
+      if (state.extraCount) msg += ", found " + state.extraCount + " more open image" + (state.extraCount === 1 ? "" : "s");
+      msg += done ? " (complete)." : "&hellip;";
+      els.extraNote.innerHTML = msg;
+    }
+
     // Some records have no datasetName; resolve the title once per unique datasetKey and
     // backfill every card that referenced it. Cached, so each dataset is fetched at most once.
     function resolveDatasetTitles() {
       var pending = {};
-      els.gallery.querySelectorAll(".inst[data-dskey]").forEach(function (el) {
+      document.querySelectorAll(".inst[data-dskey]").forEach(function (el) {
         pending[el.getAttribute("data-dskey")] = true;
       });
       Object.keys(pending).forEach(function (key) {
@@ -335,7 +556,7 @@
         getJSON(API + "/dataset/" + key)
           .then(function (d) {
             datasetTitles[key] = (d && d.title) || key;
-            els.gallery.querySelectorAll('.inst[data-dskey="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]')
+            document.querySelectorAll('.inst[data-dskey="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]')
               .forEach(function (el) { el.textContent = datasetTitles[key]; el.removeAttribute("data-dskey"); });
           })
           .catch(function () { datasetTitles[key] = key; });
@@ -371,6 +592,7 @@
       search(els.name.value);
     });
     els.loadmoreBtn.addEventListener("click", function () { loadPage(false); });
+    els.scanMoreBtn.addEventListener("click", function () { scanBatch(); });
     els.showAll.addEventListener("change", reloadGallery);
     els.alts.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-name]");
