@@ -96,9 +96,13 @@
     <div id="status" class="status" hidden></div>
     <div id="summary"></div>
     <div id="controls" hidden style="margin:0.5rem 0;">
-      <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:0.4rem;cursor:pointer;">
+      <label style="font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
         <input type="checkbox" id="showAll" style="margin:0;flex:0 0 auto;width:1.15em;height:1.15em;">
         Include non-reusable images (CC-BY-NC, all rights reserved &amp; more)
+      </label>
+      <label style="font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;cursor:pointer;margin-top:0.3rem;">
+        <input type="checkbox" id="litToggle" style="margin:0;flex:0 0 auto;width:1.15em;height:1.15em;">
+        Also search taxonomic literature figures (Plazi / BLR) &mdash; not in GBIF <small style="color:var(--muted-color);">(prototype)</small>
       </label>
     </div>
     <div id="resultsBar" class="results-bar" hidden></div>
@@ -113,6 +117,13 @@
       <h3 class="extra-head">Also openly licensed at the image level
         <small>&mdash; the image carries an open license even though the GBIF record isn&rsquo;t flagged reusable</small></h3>
       <div id="extraGrid" class="grid-gallery"></div>
+    </div>
+
+    <div id="litfigs" hidden>
+      <h3 class="extra-head">Taxonomic literature figures
+        <small>&mdash; from Plazi / Biodiversity Literature Repository on Zenodo, not exposed by GBIF</small></h3>
+      <p class="scan-status" id="litNote"></p>
+      <div id="litGrid" class="grid-gallery"></div>
     </div>
 
     <div id="alts" class="alts" hidden></div>
@@ -153,15 +164,20 @@
       scanMoreBtn: document.getElementById("scanMoreBtn"),
       extra: document.getElementById("extra"),
       extraGrid: document.getElementById("extraGrid"),
+      litToggle: document.getElementById("litToggle"),
+      litfigs: document.getElementById("litfigs"),
+      litNote: document.getElementById("litNote"),
+      litGrid: document.getElementById("litGrid"),
       alts: document.getElementById("alts")
     };
+    var ZENODO = "https://zenodo.org/api/records";
 
     // Occurrence-level license enums GBIF can filter on that are reusable on Commons.
     // (CC-BY-SA has no occurrence-level enum, so it only appears in "include all" mode,
     // where it is detected per image from the media license.)
     var REUSABLE_FILTER = "&license=CC0_1_0&license=CC_BY_4_0";
 
-    var state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false,
+    var state = { taxonKey: null, canonical: null, offset: 0, total: 0, shown: 0, busy: false,
                   scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
     var shownIds = {};      // media identifiers already on the page (dedupe across both passes)
     var datasetTitles = {}; // datasetKey -> human title, resolved once and reused
@@ -217,11 +233,13 @@
     function hideStatus() { els.status.hidden = true; }
 
     function resetView() {
-      state = { taxonKey: null, offset: 0, total: 0, shown: 0, busy: false,
+      state = { taxonKey: null, canonical: null, offset: 0, total: 0, shown: 0, busy: false,
                 scanOffset: 0, scannedRecords: 0, extraCount: 0, scanning: false, topUpStarted: false };
       shownIds = {};
       els.summary.innerHTML = "";
       els.gallery.innerHTML = "";
+      els.litfigs.hidden = true;
+      els.litGrid.innerHTML = "";
       resetExtra();
       els.alts.innerHTML = "";
       els.alts.hidden = true;
@@ -283,6 +301,8 @@
             return resolveVernacular(name);
           }
           state.taxonKey = m.usageKey;
+          state.canonical = m.canonicalName || m.scientificName || name;
+          if (els.litToggle.checked) loadLitFigs();
           return getJSON(API + "/occurrence/search?taxonKey=" + m.usageKey +
             "&mediaType=StillImage&limit=0&facet=license&facetLimit=10")
             .then(function (f) {
@@ -586,6 +606,92 @@
       els.extraNote.innerHTML = msg;
     }
 
+    // --- Prototype: taxonomic literature figures from Plazi / BLR via the Zenodo API ---
+    // These figures are NOT in GBIF as media; Zenodo (host zenodo.org) is Commons-allow-listed.
+    function loadLitFigs() {
+      if (!state.canonical) return;
+      els.litfigs.hidden = false;
+      els.litGrid.innerHTML = "";
+      els.litNote.innerHTML = "Searching taxonomic literature for <em>" + esc(state.canonical) + "</em>&hellip;";
+      var q = '"' + state.canonical + '" AND resource_type.type:image';
+      getJSON(ZENODO + "?communities=biosyslit&size=24&q=" + encodeURIComponent(q))
+        .then(function (d) {
+          var hits = (d.hits && d.hits.hits) || [];
+          if (!hits.length) {
+            els.litNote.innerHTML = "No taxonomic literature figures found for <em>" + esc(state.canonical) + "</em>.";
+            return;
+          }
+          var frag = document.createDocumentFragment(), reusable = 0;
+          hits.forEach(function (rec) {
+            var c = litCard(rec);
+            if (c) { frag.appendChild(c.el); if (c.reusable) reusable++; }
+          });
+          els.litGrid.appendChild(frag);
+          els.litNote.innerHTML = hits.length + " figure" + (hits.length === 1 ? "" : "s") +
+            " from taxonomic literature &middot; " + reusable + " openly licensed &middot; " +
+            "hosted on Zenodo (Commons-allow-listed). Licenses are often unstated on Zenodo &mdash; verify at the source.";
+        })
+        .catch(function (err) {
+          els.litNote.textContent = "Could not load literature figures: " + err.message;
+        });
+    }
+
+    function litCard(rec) {
+      var md = rec.metadata || {};
+      var files = rec.files || [];
+      var f = files.filter(function (x) { return /\.(jpe?g|png|gif|tiff?|webp)$/i.test(x.key || ""); })[0] || files[0];
+      if (!f || !f.links || !f.links.self) return null;
+      var fileUrl = f.links.self;
+      var licId = (md.license || {}).id || "";
+      var lic = classify(licId);
+      var authors = (md.creators || []).map(function (c) { return c.name; }).slice(0, 3).join(", ");
+      var sourcePage = "https://zenodo.org/records/" + rec.id;
+      (md.related_identifiers || []).forEach(function (r) {
+        if (/^10\.\d/.test(r.identifier || "")) sourcePage = "https://doi.org/" + r.identifier;
+      });
+
+      var card = document.createElement("div");
+      card.className = "card" + (lic.reusable ? "" : " dim");
+      var thumb = '<div class="thumb">' +
+        '<span class="lic ' + lic.cls + '">' + (licId ? lic.label : "license?") + '</span>' +
+        '<img src="' + esc(fileUrl) + '" loading="lazy" alt="' + esc(md.title || "figure") +
+        '" onerror="this.onerror=null;this.src=\'' + LOGO + '\';this.classList.add(\'fallback\');"></div>';
+      var act = lic.reusable
+        ? '<a class="upload" href="' + esc(buildZenodoCommonsUrl(rec, f, lic, fileUrl, sourcePage, authors)) +
+          '" target="_blank" rel="noopener">Upload to Commons</a>'
+        : '<span class="incompat">' + (licId ? "Not Commons-compatible" : "License not stated &mdash; check source") + '</span>';
+      card.innerHTML = thumb + '<div class="body">' +
+        '<p class="inst" title="' + esc(md.title || "") + '">' + esc(shorten(md.title, 60)) + '</p>' +
+        (authors ? '<p class="by" title="' + esc(authors) + '">&#128247; ' + esc(authors) + '</p>' : '') +
+        '<p class="assumed"><a href="' + esc(sourcePage) + '" target="_blank" rel="noopener">source &#8599;</a></p>' +
+        '<div class="act">' + act + '</div></div>';
+      return { el: card, reusable: lic.reusable };
+    }
+
+    function shorten(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+
+    function buildZenodoCommonsUrl(rec, f, lic, fileUrl, sourcePage, authors) {
+      var md = rec.metadata || {};
+      var ext = (String(f.key).match(/\.(jpe?g|png|gif|tiff?|webp)$/i) || [".jpg"])[0];
+      var wm = lic.cls === "cc0" ? "Cc-zero" : lic.cls === "ccbysa" ? "cc-by-sa-4.0" : "cc-by-4.0";
+      var taxon = state.canonical || md.title || "figure";
+      var desc = "{{Information\n" +
+        "|description={{en|" + (md.title || taxon) + "}}\n" +
+        "|date=" + (md.publication_date || "") + "\n" +
+        "|source=" + sourcePage + "\n" +
+        "|author=" + (authors || "Biodiversity Literature Repository") + "\n" +
+        "|permission=\n|other versions=\n}}\n\n" +
+        "[[Category:" + taxon + "]]\n" +
+        "{{Biodiversity Literature Repository|" + rec.id + "}}\n" +
+        "[[Category:Reuse images with Tarsier]]\n";
+      var dest = (taxon + " (BLR " + rec.id + ")" + ext).replace(/[\[\]{}|#<>]/g, "");
+      return "https://commons.wikimedia.org/wiki/Special:Upload" +
+        "?wpUploadDescription=" + encodeURIComponent(desc) +
+        "&wpLicense=" + encodeURIComponent(wm) +
+        "&wpDestFile=" + encodeURIComponent(dest) +
+        "&wpSourceType=url&wpUploadFileURL=" + encodeURIComponent(fileUrl);
+    }
+
     // Some records have no datasetName; resolve the title once per unique datasetKey and
     // backfill every card that referenced it. Cached, so each dataset is fetched at most once.
     function resolveDatasetTitles() {
@@ -640,6 +746,10 @@
     els.loadmoreBtn.addEventListener("click", function () { loadPage(false); });
     els.scanMoreBtn.addEventListener("click", function () { scanBatch(); });
     els.showAll.addEventListener("change", reloadGallery);
+    els.litToggle.addEventListener("change", function () {
+      if (els.litToggle.checked) loadLitFigs();
+      else { els.litfigs.hidden = true; els.litGrid.innerHTML = ""; }
+    });
     els.alts.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-name]");
       if (!b) return;
